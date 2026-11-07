@@ -1,0 +1,288 @@
+openapi: 3.0.3
+info:
+  title: Second Sight API
+  description: Intelligent payment protection layer that pauses high-pressure scams before funds move, giving families a calm second look. Built for PayPal Orders v2 and Generative AI.
+  version: 1.0.0
+  contact:
+    name: Second Sight Team
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://second-sight.onrender.com
+    description: Production server on Render
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns health status for uptime pingers without querying the database.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+
+  /api/check:
+    post:
+      summary: Pre-check payment risk
+      description: Evaluates proposed transaction using deterministic rules and AI semantic detection. Creates a Payment record with status CHECKED.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - elderId
+                - amount
+                - payeeLabel
+                - message
+              properties:
+                elderId:
+                  type: string
+                  example: "654c1234567890abcdef1234"
+                amount:
+                  type: number
+                  example: 500
+                payeeLabel:
+                  type: string
+                  example: "Mike"
+                message:
+                  type: string
+                  example: "Pay in gift cards right now or police will arrest you"
+      responses:
+        '200':
+          description: Risk check evaluation completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentId:
+                    type: string
+                  risk:
+                    type: string
+                    enum: [LOW, MEDIUM, HIGH]
+                  reasons:
+                    type: array
+                    items:
+                      type: string
+                  questionForElder:
+                    type: string
+                  willHold:
+                    type: boolean
+
+  /api/orders:
+    post:
+      summary: Create PayPal order
+      description: Creates a PayPal order with intent AUTHORIZE. Reads amount and payee directly from the database record.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paymentId
+              properties:
+                paymentId:
+                  type: string
+      responses:
+        '201':
+          description: PayPal Order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orderId:
+                    type: string
+
+  /api/orders/{orderId}/authorize:
+    post:
+      summary: Authorize order and route funds
+      description: Called after the elder approves the order inside the PayPal popup. Authorizes funds. If LOW risk, captures immediately. If MEDIUM/HIGH risk, holds for family review.
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Authorized status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [CAPTURED, HELD]
+                  paymentId:
+                    type: string
+                  message:
+                    type: string
+
+  /api/payments/{id}/status:
+    get:
+      summary: Check payment status
+      description: Polled by the elder screen to check if payment is captured, held, or declined. Triggers lazy hold expiry. Never returns hold tokens.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  decision:
+                    type: string
+                    nullable: true
+                  message:
+                    type: string
+
+  /api/holds:
+    get:
+      summary: List pending family holds
+      description: Returns active hold requests for the family dashboard. Triggers lazy hold expiry.
+      parameters:
+        - name: familyId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, all]
+      responses:
+        '200':
+          description: List of holds
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  holds:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HoldDetail'
+
+  /api/holds/{token}:
+    get:
+      summary: Retrieve single hold by token
+      description: Retrieves hold details for the family approval screen via unguessable token.
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Hold detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HoldDetail'
+
+  /api/holds/{token}/decision:
+    post:
+      summary: Submit family hold decision
+      description: Family approves (captures money) or declines (voids authorization immediately). Uses atomic state lock to prevent race conditions.
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - decision
+              properties:
+                decision:
+                  type: string
+                  enum: [approve, decline]
+      responses:
+        '200':
+          description: Decision processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+
+  /api/demo/users:
+    get:
+      summary: Retrieve demo users
+      description: Returns seeded demo elder, family, and family link for rapid dual-window testing.
+      responses:
+        '200':
+          description: Demo identities
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/webhooks:
+    post:
+      summary: PayPal Webhook receiver
+      description: Ingests PayPal asynchronous state events (e.g. void, capture).
+      responses:
+        '200':
+          description: Webhook received
+
+components:
+  schemas:
+    HoldDetail:
+      type: object
+      properties:
+        token:
+          type: string
+        paymentId:
+          type: string
+        amount:
+          type: number
+        payeeLabel:
+          type: string
+        message:
+          type: string
+        risk:
+          type: string
+        reasons:
+          type: array
+          items:
+            type: string
+        familySummary:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+

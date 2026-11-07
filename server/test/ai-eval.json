@@ -1,0 +1,273 @@
+[
+  {
+    "id": "scam-01",
+    "type": "scam",
+    "scamType": "authority_impersonation",
+    "amount": 500,
+    "payee": "Officer Mike",
+    "message": "Pay in gift cards right now or police will arrest you with warrant",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-02",
+    "type": "scam",
+    "scamType": "authority_impersonation",
+    "amount": 1200,
+    "payee": "IRS Tax Department",
+    "message": "Overdue taxes warrant immediate settlement via wire or federal marshal will seize assets",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-03",
+    "type": "scam",
+    "scamType": "grandchild_emergency",
+    "amount": 850,
+    "payee": "Bail Bondsman Dave",
+    "message": "Grandma please don't tell mom and dad I got into a bad car accident in Mexico and need bail money immediately",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-04",
+    "type": "scam",
+    "scamType": "grandchild_emergency",
+    "amount": 600,
+    "payee": "Western Union Transfer",
+    "message": "It's Tommy I lost my wallet and passport abroad hurry send money don't tell anyone",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-05",
+    "type": "scam",
+    "scamType": "tech_support",
+    "amount": 399,
+    "payee": "Windows Support Center",
+    "message": "Severe Trojan virus detected on computer call toll free and install AnyDesk screen share for remote access",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-06",
+    "type": "scam",
+    "scamType": "tech_support",
+    "amount": 450,
+    "payee": "Apple Security Helpdesk",
+    "message": "Your iCloud has been compromised. Purchase $450 in Apple gift cards to renew security certificates immediately",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-07",
+    "type": "scam",
+    "scamType": "gift_card",
+    "amount": 350,
+    "payee": "Electric Utility Billing",
+    "message": "Your electric power will be disconnected in 45 minutes unless paid via Target gift card right now",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-08",
+    "type": "scam",
+    "scamType": "gift_card",
+    "amount": 500,
+    "payee": "Social Security Dept",
+    "message": "Social security number frozen due to criminal activity purchase vanilla visa cards to restore benefits",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-09",
+    "type": "scam",
+    "scamType": "romance",
+    "amount": 900,
+    "payee": "Richard Miller",
+    "message": "My dearest I need urgent emergency surgery at the military clinic overseas please send money right now keep this our secret",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-10",
+    "type": "scam",
+    "scamType": "romance",
+    "amount": 750,
+    "payee": "Capt. James Stewart",
+    "message": "My love the oil rig customs requires a release fee before I can fly home to be with you please wire funds today",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-11",
+    "type": "scam",
+    "scamType": "lottery_prize",
+    "amount": 650,
+    "payee": "Global Lottery Commission",
+    "message": "Congratulations you won $2,500,000 in international sweepstakes. Pay $650 government processing fee to release payout",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-12",
+    "type": "scam",
+    "scamType": "lottery_prize",
+    "amount": 400,
+    "payee": "Publishers Clearing Claim",
+    "message": "Delivery van is in your town with oversized check send delivery insurance fee now",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-13",
+    "type": "scam",
+    "scamType": "investment_crypto",
+    "amount": 1500,
+    "payee": "Crypto Wealth Advisors",
+    "message": "Guaranteed 400% weekly return on Bitcoin mining platform transfer funds immediately to secure your spot",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-14",
+    "type": "scam",
+    "scamType": "investment_crypto",
+    "amount": 800,
+    "payee": "Smart Trading Bot",
+    "message": "Exclusive AI cryptocurrency arbitrage trading deposit $800 in Ethereum today before window closes",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-15",
+    "type": "scam",
+    "scamType": "authority_impersonation",
+    "amount": 1100,
+    "payee": "County Sheriff Court Division",
+    "message": "Missed jury duty federal citation bench warrant issued settle fine over phone right now or be arrested",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "scam-16",
+    "type": "scam",
+    "scamType": "other",
+    "amount": 480,
+    "payee": "Bank Fraud Investigation Unit",
+    "message": "Your bank account has been hacked transfer your funds to our safe government reserve account right now",
+    "expectedRisk": ["MEDIUM", "HIGH"]
+  },
+  {
+    "id": "legit-01",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 80,
+    "payee": "Bob's Plumbing",
+    "message": "Repair leaking pipe under kitchen sink",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-02",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 45,
+    "payee": "Green Thumb Lawn Care",
+    "message": "Biweekly lawn mowing and trimming",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-03",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 50,
+    "payee": "Emma Davis",
+    "message": "Happy 16th birthday sweet granddaughter love grandma",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-04",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 32,
+    "payee": "Sarah Davis",
+    "message": "Reimbursement for Sunday family lunch",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-05",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 65,
+    "payee": "Sparkle Cleaners",
+    "message": "Window washing and gutter cleaning spring service",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-06",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 95,
+    "payee": "Apex Electrician",
+    "message": "Replacing hallway light switch and bathroom outlet",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-07",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 40,
+    "payee": "Paws & Whiskers Grooming",
+    "message": "Dog bath and nail trimming for Buster",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-08",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 75,
+    "payee": "Corner Pharmacy",
+    "message": "Monthly prescription refill delivery",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-09",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 28,
+    "payee": "Fresh Market Groceries",
+    "message": "Weekly fresh fruit and milk groceries",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-10",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 85,
+    "payee": "Comfort Shoes Store",
+    "message": "Orthopedic walking shoes for Margaret",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-11",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 35,
+    "payee": "City Water Utility",
+    "message": "October water and sewer residential bill",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-12",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 60,
+    "payee": "Sunrise Physical Therapy",
+    "message": "Knee rehabilitation exercise co-payment",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-13",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 55,
+    "payee": "Book Nook",
+    "message": "Gardening books and crossword puzzle collection",
+    "expectedRisk": ["LOW"]
+  },
+  {
+    "id": "legit-14",
+    "type": "legitimate",
+    "scamType": "none",
+    "amount": 25,
+    "payee": "Grandson Lucas",
+    "message": "Movie ticket and popcorn treat for good grades",
+    "expectedRisk": ["LOW"]
+  }
+]
+
