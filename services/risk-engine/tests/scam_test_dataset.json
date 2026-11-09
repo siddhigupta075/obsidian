@@ -1,0 +1,814 @@
+{
+  "meta": {
+    "name": "Second Pair of Eyes: scam-detection test dataset",
+    "version": "1.0",
+    "description": "30 sample transactions for testing the risk engine. Each item has an input block (what the engine sees), an expected block (target output), and a why note.",
+    "counts": {
+      "total": 30,
+      "scam": 17,
+      "normal": 13
+    },
+    "notes": [
+      "expected.action is 'hold' (authorize only, do not capture) or 'capture'.",
+      "S08 and N13 are medium-risk edge cases. N02 and N09 are false-positive traps (gift card and deadline wording in a real payment).",
+      "Amounts and names are fictional. Scam scripts are paraphrased from publicly described patterns."
+    ],
+    "tactics_vocabulary": [
+      "urgency",
+      "secrecy",
+      "gift_card_payment",
+      "authority_impersonation",
+      "fear_threat",
+      "family_emergency",
+      "romance_isolation",
+      "isolation_from_family",
+      "remote_access",
+      "prize_fee",
+      "crypto_payment",
+      "unusual_payment_method",
+      "new_payee"
+    ]
+  },
+  "transactions": [
+    {
+      "id": "S01",
+      "label": "scam",
+      "scam_type": "grandchild_in_jail",
+      "input": {
+        "amount": 4800.0,
+        "currency": "USD",
+        "payee_name": "Metro Bail Services LLC",
+        "is_new_payee": true,
+        "payment_method": "bank_transfer",
+        "payee_note": "Bail for Tommy, please hurry",
+        "message_text": null,
+        "voice_transcript": "Grandma it's me, I'm in trouble, I got arrested after a car accident. Please don't tell Mom and Dad. A lawyer is going to call you. I need bail money right now, please send it today.",
+        "channel": "voice_call"
+      },
+      "expected": {
+        "risk_level": "high",
+        "action": "hold",
+        "tactics": [
+          "urgency",
+          "secrecy",
+          "family_emergency",
+          "authority_impersonation",
+          "new_payee"
+        ],
+        "calm_question_theme": "confirm the grandchild's situation by calling a known number"
+      },
+      "why": "Classic grandchild-in-jail script: panic, secrecy, bail demand, unknown payee."
+    },
+    {
+      "id": "S02",
+      "label": "scam",
+      "scam_type": "tech_support_gift_card",
+      "input": {
+        "amount": 500.0,
+        "currency": "USD",
+        "payee_name": "Apple Gift Cards Online",
+        "is_new_payee": true,
+        "payment_method": "gift_card",
+        "payee_note": "Microsoft support refund fix",
+        "message_text": "Your computer has a virus. Buy 5 Apple gift cards of $100 and read me the codes so we can remove it. Do not tell the bank, they are part of the problem.",
+        "voice_transcript": null,
+        "channel": "sms"
+      },
+      "expected": {
+        "risk_level": "high",
+        "action": "hold",
+        "tactics": [
+          "urgency",
+          "secrecy",
+          "gift_card_payment",
+          "authority_impersonation",
+          "fear_threat"
+        ],
+        "calm_question_theme": "ask who contacted them and why a company would ask for gift cards"
+      },
+      "why": "Tech support never takes gift cards; secrecy instruction about the bank."
+    },
+    {
+      "id": "S03",
+      "label": "scam",
+      "scam_type": "romance",
+      "input": {
+        "amount": 3200.0,
+        "currency": "USD",
+        "payee_name": "Global Flight Travel Ltd",
+        "is_new_payee": true,
+        "payment_method": "bank_transfer",
+        "payee_note": "Flight for Daniel to come home",
+        "message_text": "My love, my contract in Syria ended but the army will not release my pay for 2 weeks. I need 3200 for my plane ticket. I have never asked anyone for anything. Please keep this between us, my family would not understand.",
+        "voice_transcript": null,
+        "channel": "chat_app"
+      },
+      "expected": {
+        "risk_level": "high",
+        "action": "hold",
+        "tactics": [
+          "romance_isolation",
+          "secrecy",
+          "new_payee",
+          "urgency"
+        ],
+        "calm_question_theme": "ask whether they have ever met this person in person or on video"
+      },
+      "why": "Online-only partner abroad asks for money and secrecy; payee unrelated to him."
+    },
+    {
+      "id": "S04",
+      "label": "scam",
+      "scam_type": "tech_support_remote_access",
+      "input": {
+        "amount": 299.0,
+        "currency": "USD",
+        "payee_name": "QuickRefund Services",
+        "is_new_payee": true,
+        "payment_method": "card",
+        "payee_note": "Refund processing fee",
+        "message_text": "We accidentally refunded you too much. To fix it, install the support tool and stay on the line. Do not hang up or your account will be locked.",
+        "voice_transcript": "Stay on the line with me, do not close the window, do not talk to anyone else about this, I am helping you.",
+        "channel": "voice_call"
+      },
+      "expected": {
+        "risk_level": "high",
+        "action": "hold",
+        "tactics": [
+          "remote_access",
+          "urgency",
+          "secrecy",
+          "authority_impersonation",
+          "fear_threat"
+        ],
+        "calm_question_theme": "ask whether anyone asked to control their computer remotely"
+      },
+      "why": "Remote access plus 'stay on the line' pressure."
+    },
+    {
+      "id": "S05",
+      "label": "scam",
+      "scam_type": "government_impersonation",
+      "input": {
+        "amount": 2100.0,
+        "currency": "USD",
+        "payee_name": "Bitcoin Depot Kiosk 4412",
+        "is_new_payee": true,
+        "payment_method": "crypto",
+        "payee_note": "IRS arrest warrant settlement",
+        "message_text": "This is Officer Brown from the IRS. A warrant has been issued for your arrest for unpaid taxes. Pay 2100 in Bitcoin today to cancel it. Do not discuss this with anyone.",
+        "voice_transcript": null,
+        "channel": "voice_call"
+      },
+      "expected": {
+        "risk_level": "high",
+        "action": "hold",
+        "tactics": [
+          "authority_impersonation",
+          "fear_threat",
+          "urgency",
+          "secrecy",
+          "crypto_payment"
+        ],
+        "calm_question_theme": "ask whether a government agency has ever asked for crypto before"
+      },
+      "why": "The IRS never demands crypto or threatens arrest by phone."
+    },
+    {
+      "id": "S06",
+      "label": "scam",
+      "scam_type": "lottery_prize_fee",
+      "input": {
+        "amount": 450.0,
+        "currency": "USD",
+        "payee_name": "International Prize Claims Dept",
+        "is_new_payee": true,
+        "payment_method": "wire",
+        "payee_note": "Processing fee for prize",
+        "message_text": "Congratulations! You won 850,000 dollars in the Sweepstakes. To release your prize you must pay a 450 dollar processing fee within 24 hours. Keep your win private until paid.",
+        "voice_transcript": null,
+        "channel": "email"
+      },
+      "expected": {
+        "risk_level": "medium",
+        "action": "hold",
+        "tactics": [
+          "prize_fee",
+          "urgency",
+          "secrecy",
+          "new_payee"
+        ],
+        "calm_question_theme": "ask whether they entered this contest"
+      },
+      "why": "Pay-to-win fee; real prizes never require fees."
+    },
+    {
+      "id": "S07",
+      "label": "scam",
+      "scam_type": "bank_safe_account",
+      "input": {
+        "amount": 9500.0,
+        "currency": "USD",
+        "payee_name": "Secure Holdings Account 77",
+        "is_new_payee": true,
+        "payment_method": "bank_transfer",
+        "payee_note": "Move savings to safe account",
+        "message_text": "This is your bank's fraud department. Hackers are inside your account. Move your savings to this secure account right away and do not tell the branch staff, one of them is involved.",
+        "voice_transcript": null,
+        "channel": "voice_call"
+      },
+      "expected": {
+        "risk_level": "high",
+        "action": "hold",
+        "tactics": [
+          "authority_impersonation",
+          "urgency",
+          "secrecy",
+          "fear_threat",
+          "new_payee"
+        ],
+        "calm_question_theme": "ask them to hang up and call the number on the back of their card"
+      },
+      "why": "Safe account scam: banks never ask customers to move money."
+    },
+    {
+      "id": "S08",
+      "label": "scam",
+      "scam_type": "medicare_fee",
+      "input": {
+        "amount": 89.0,
+        "currency": "USD",
+        "payee_name": "Medicare Services Center",
+        "is_new_payee": true,
+        "payment_method": "card",
+        "payee_note": "New Medicare card fee",
+        "message_text": "Your Medicare card is being replaced. Pay an 89 dollar activation fee today or your coverage will stop.",
+        "voice_transcript": null,
+        "channel": "sms"
+      },
+      "expected": {
+        "risk_level": "medium",
+        "action": "hold",
+        "tactics": [
+          "authority_impersonation",
+          "fear_threat",
+          "urgency",
+          "new_payee"
+        ],
+        "calm_question_theme": "ask whether they requested a new card"
+      },
+      "why": "Small amount, still a known scam pattern. Tests medium sensitivity."
+    },
+    {
+      "id": "S09",
+      "label": "scam",
+      "scam_type": "utility_shutoff",
+      "input": {
+        "amount": 380.0,
+        "currency": "USD",
+        "payee_name": "Prepaid Reload Network",
+        "is_new_payee": true,
+        "payment_method": "prepaid_card",
+        "payee_note": "Electric bill past due",
+        "message_text": "Your power will be shut off in 1 hour unless you pay 380 dollars on a prepaid card right now. This is the last notice.",
+        "voice_transcript": null,
+        "channel": "voice_call"
+      },
+      "expected": {
+        "risk_level": "high",
+        "action": "hold",
+        "tactics": [
+          "urgency",
+          "fear_threat",
+          "authority_impersonation",
+          "unusual_payment_method"
+        ],
+        "calm_question_theme": "ask whether they can check the bill on their usual account first"
+      },
+      "why": "One-hour shutoff threat with prepaid card payment."
+    },
+    {
+      "id": "S10",
+      "label": "scam",
+      "scam_type": "crypto_investment_romance",
+      "input": {
+        "amount": 7000.0,
+        "currency": "USD",
+        "payee_name": "CoinVault Trading",
+        "is_new_payee": true,
+        "payment_method": "crypto",
+        "payee_note": "Investment with Linda's platform",
+        "message_text": "Linda said her uncle doubled his money in 2 weeks on this platform. The offer ends tonight. I have not told my son because he would try to stop me.",
+        "voice_transcript": null,
+        "channel": "chat_app"
+      },
+      "expected": {
+        "risk_level": "high",
+        "action": "hold",
+        "tactics": [
+          "romance_isolation",
+          "urgency",
+          "secrecy",
+          "crypto_payment",
+          "isolation_from_family"
+        ],
+        "calm_question_theme": "ask whether they have met Linda and whether their son knows"
+      },
+      "why": "Pig-butchering pattern: online friend, guaranteed returns, hiding from family."
+    },
+    {
+      "id": "S11",
+      "label": "scam",
+      "scam_type": "home_repair_upfront",
+      "input": {
+        "amount": 3500.0,
+        "currency": "USD",
+        "payee_name": "Sunrise Paving and Roofing",
+        "is_new_payee": true,
+        "payment_method": "cash_app",
+        "payee_note": "Driveway work, cash upfront",
+        "message_text": "We have leftover asphalt from a job nearby and can do your driveway today at half price, but we need the full amount upfront before we start.",
+        "voice_transcript": null,
+        "channel": "in_person"
+      },
+      "expected": {
+        "risk_level": "medium",
+        "action": "hold",
+        "tactics": [
+          "urgency",
+          "unusual_payment_method",
+          "new_payee"
+        ],
+        "calm_question_theme": "ask whether they have gotten a second quote or written contract"
+      },
+      "why": "Door-to-door, full upfront payment, peer-to-peer app."
+    },
+    {
+      "id": "S12",
+      "label": "scam",
+      "scam_type": "grandchild_accident",
+      "input": {
+        "amount": 2500.0,
+        "currency": "USD",
+        "payee_name": "Google Play Cards Store",
+        "is_new_payee": true,
+        "payment_method": "gift_card",
+        "payee_note": "Help for Emma",
+        "message_text": null,
+        "voice_transcript": "Nana it's Emma, I had an accident and broke my phone so this is a friend's number. Please buy Google Play cards and send me the codes, don't tell Dad, he will be mad.",
+        "channel": "voice_call"
+      },
+      "expected": {
+        "risk_level": "high",
+        "action": "hold",
+        "tactics": [
+          "family_emergency",
+          "secrecy",
+          "gift_card_payment",
+          "urgency"
+        ],
+        "calm_question_theme": "ask if they have spoken to Emma on her usual number"
+      },
+      "why": "Different phone number story plus gift cards and secrecy."
+    },
+    {
+      "id": "S13",
+      "label": "scam",
+      "scam_type": "fake_charity",
+      "input": {
+        "amount": 250.0,
+        "currency": "USD",
+        "payee_name": "Hurricane Relief Direct",
+        "is_new_payee": true,
+        "payment_method": "gift_card",
+        "payee_note": "Donation for storm victims",
+        "message_text": "We are collecting donations for hurricane victims today only. We can only accept gift cards. Please do not delay, families are waiting.",
+        "voice_transcript": null,
+        "channel": "voice_call"
+      },
+      "expected": {
+        "risk_level": "medium",
+        "action": "hold",
+        "tactics": [
+          "urgency",
+          "gift_card_payment",
+          "new_payee"
+        ],
+        "calm_question_theme": "ask whether they can donate through the charity's official website"
+      },
+      "why": "Charities do not insist on gift cards."
+    },
+    {
+      "id": "S14",
+      "label": "scam",
+      "scam_type": "inheritance_fee",
+      "input": {
+        "amount": 5600.0,
+        "currency": "USD",
+        "payee_name": "Hargrove Legal Trust Fund",
+        "is_new_payee": true,
+        "payment_method": "wire",
+        "payee_note": "Legal fee to release inheritance",
+        "message_text": "Dear beloved, a relative you never knew left you 2.4 million dollars. To release the funds you must first pay legal and tax fees of 5600 dollars. This matter is confidential.",
+        "voice_transcript": null,
+        "channel": "email"
+      },
+      "expected": {
+        "risk_level": "high",
+        "action": "hold",
+        "tactics": [
+          "prize_fee",
+          "secrecy",
+          "new_payee",
+          "urgency"
+        ],
+        "calm_question_theme": "ask how they know this relative and who contacted them"
+      },
+      "why": "Advance-fee fraud with confidentiality request."
+    },
+    {
+      "id": "S15",
+      "label": "scam",
+      "scam_type": "refund_overpayment",
+      "input": {
+        "amount": 1800.0,
+        "currency": "USD",
+        "payee_name": "Walmart Gift Cards Kiosk",
+        "is_new_payee": true,
+        "payment_method": "gift_card",
+        "payee_note": "Return extra refund",
+        "message_text": "We accidentally refunded 2000 dollars instead of 200 to your account. Please send back 1800 dollars in gift cards right away or we will have to report this.",
+        "voice_transcript": null,
+        "channel": "voice_call"
+      },
+      "expected": {
+        "risk_level": "high",
+        "action": "hold",
+        "tactics": [
+          "authority_impersonation",
+          "gift_card_payment",
+          "urgency",
+          "fear_threat"
+        ],
+        "calm_question_theme": "ask whether the refund actually appears in their account"
+      },
+      "why": "Fake refund that is returned in gift cards."
+    },
+    {
+      "id": "S16",
+      "label": "scam",
+      "scam_type": "pet_deposit",
+      "input": {
+        "amount": 650.0,
+        "currency": "USD",
+        "payee_name": "Happy Paws Delivery Co",
+        "is_new_payee": true,
+        "payment_method": "bank_transfer",
+        "payee_note": "Puppy shipping fee",
+        "message_text": "The puppy is ready but the airline needs the shipping fee today. Send 650 dollars to hold the puppy. I cannot do video calls, I am traveling.",
+        "voice_transcript": null,
+        "channel": "email"
+      },
+      "expected": {
+        "risk_level": "medium",
+        "action": "hold",
+        "tactics": [
+          "urgency",
+          "new_payee"
+        ],
+        "calm_question_theme": "ask whether they have seen the puppy in person or on video"
+      },
+      "why": "Pet deposit scam: no video, urgent fee, unknown payee."
+    },
+    {
+      "id": "S17",
+      "label": "scam",
+      "scam_type": "social_security_suspension",
+      "input": {
+        "amount": 1500.0,
+        "currency": "USD",
+        "payee_name": "Bitcoin ATM Terminal 88",
+        "is_new_payee": true,
+        "payment_method": "crypto",
+        "payee_note": "Social Security number suspended",
+        "message_text": "Your Social Security number has been linked to crimes and is suspended. Withdraw cash and deposit it into the Bitcoin ATM to verify your funds. Do not tell the bank teller why.",
+        "voice_transcript": null,
+        "channel": "voice_call"
+      },
+      "expected": {
+        "risk_level": "high",
+        "action": "hold",
+        "tactics": [
+          "authority_impersonation",
+          "fear_threat",
+          "secrecy",
+          "crypto_payment",
+          "urgency"
+        ],
+        "calm_question_theme": "ask who contacted them and whether they can call the official number"
+      },
+      "why": "Suspension threat plus crypto ATM and secrecy from the teller."
+    },
+    {
+      "id": "N01",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 84.2,
+        "currency": "USD",
+        "payee_name": "City Power and Light",
+        "is_new_payee": false,
+        "payment_method": "bank_transfer",
+        "payee_note": "Monthly electricity bill",
+        "message_text": "Your bill for October is 84.20 dollars. Due November 15.",
+        "voice_transcript": null,
+        "channel": "email"
+      },
+      "expected": {
+        "risk_level": "low",
+        "action": "capture",
+        "tactics": [],
+        "calm_question_theme": null
+      },
+      "why": "Regular biller, normal amount, matches history."
+    },
+    {
+      "id": "N02",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 50.0,
+        "currency": "USD",
+        "payee_name": "Amazon Gift Cards",
+        "is_new_payee": false,
+        "payment_method": "gift_card",
+        "payee_note": "Happy birthday Tom! Love, Grandma",
+        "message_text": null,
+        "voice_transcript": null,
+        "channel": "in_app"
+      },
+      "expected": {
+        "risk_level": "low",
+        "action": "capture",
+        "tactics": [],
+        "calm_question_theme": null
+      },
+      "why": "Trap case: gift card is legitimate here (birthday gift, small amount, warm note, no pressure)."
+    },
+    {
+      "id": "N03",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 23.4,
+        "currency": "USD",
+        "payee_name": "Rajesh Pharmacy",
+        "is_new_payee": false,
+        "payment_method": "card",
+        "payee_note": "Refill: blood pressure tablets",
+        "message_text": null,
+        "voice_transcript": null,
+        "channel": "in_person"
+      },
+      "expected": {
+        "risk_level": "low",
+        "action": "capture",
+        "tactics": [],
+        "calm_question_theme": null
+      },
+      "why": "Usual pharmacy, small amount."
+    },
+    {
+      "id": "N04",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 67.0,
+        "currency": "USD",
+        "payee_name": "FreshCart Grocery Delivery",
+        "is_new_payee": false,
+        "payment_method": "card",
+        "payee_note": "Weekly groceries",
+        "message_text": "Your order is on its way and will arrive between 4 and 5 pm.",
+        "voice_transcript": null,
+        "channel": "app"
+      },
+      "expected": {
+        "risk_level": "low",
+        "action": "capture",
+        "tactics": [],
+        "calm_question_theme": null
+      },
+      "why": "Normal weekly grocery order."
+    },
+    {
+      "id": "N05",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 100.0,
+        "currency": "USD",
+        "payee_name": "St. Mary's Church",
+        "is_new_payee": false,
+        "payment_method": "bank_transfer",
+        "payee_note": "Monthly donation",
+        "message_text": null,
+        "voice_transcript": null,
+        "channel": "in_app"
+      },
+      "expected": {
+        "risk_level": "low",
+        "action": "capture",
+        "tactics": [],
+        "calm_question_theme": null
+      },
+      "why": "Recurring donation to known recipient."
+    },
+    {
+      "id": "N06",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 420.0,
+        "currency": "USD",
+        "payee_name": "Brightline Plumbing",
+        "is_new_payee": true,
+        "payment_method": "card",
+        "payee_note": "Invoice 2217: water heater repair",
+        "message_text": "Thanks for having us today. The invoice is attached; payment is due within 14 days.",
+        "voice_transcript": null,
+        "channel": "email"
+      },
+      "expected": {
+        "risk_level": "low",
+        "action": "capture",
+        "tactics": [],
+        "calm_question_theme": null
+      },
+      "why": "New payee but real service, invoice, a normal deadline, a standard payment method."
+    },
+    {
+      "id": "N07",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 1200.0,
+        "currency": "USD",
+        "payee_name": "Mr. Verma (Landlord)",
+        "is_new_payee": false,
+        "payment_method": "bank_transfer",
+        "payee_note": "November rent",
+        "message_text": null,
+        "voice_transcript": null,
+        "channel": "in_app"
+      },
+      "expected": {
+        "risk_level": "low",
+        "action": "capture",
+        "tactics": [],
+        "calm_question_theme": null
+      },
+      "why": "Rent to long-standing payee on the usual date."
+    },
+    {
+      "id": "N08",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 800.0,
+        "currency": "USD",
+        "payee_name": "Priya Sharma (granddaughter)",
+        "is_new_payee": false,
+        "payment_method": "bank_transfer",
+        "payee_note": "For your textbooks, good luck this semester!",
+        "message_text": "Thank you Nani! I will send you the receipts.",
+        "voice_transcript": null,
+        "channel": "chat_app"
+      },
+      "expected": {
+        "risk_level": "low",
+        "action": "capture",
+        "tactics": [],
+        "calm_question_theme": null
+      },
+      "why": "Known family member, loving note, no secrecy or urgency."
+    },
+    {
+      "id": "N09",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 132.0,
+        "currency": "USD",
+        "payee_name": "State Water Department",
+        "is_new_payee": false,
+        "payment_method": "bank_transfer",
+        "payee_note": "Water bill, last day to pay without late fee is Friday",
+        "message_text": "Reminder: your bill is due Friday. Late fees apply after that date.",
+        "voice_transcript": null,
+        "channel": "email"
+      },
+      "expected": {
+        "risk_level": "low",
+        "action": "capture",
+        "tactics": [],
+        "calm_question_theme": null
+      },
+      "why": "Trap case: a deadline exists, but it is a genuine bill from a known biller. Tests false positives on urgency words."
+    },
+    {
+      "id": "N10",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 39.99,
+        "currency": "USD",
+        "payee_name": "ShoeBarn Online",
+        "is_new_payee": true,
+        "payment_method": "card",
+        "payee_note": "Order 55871: walking shoes",
+        "message_text": "Thanks for your order! Free returns within 30 days.",
+        "voice_transcript": null,
+        "channel": "email"
+      },
+      "expected": {
+        "risk_level": "low",
+        "action": "capture",
+        "tactics": [],
+        "calm_question_theme": null
+      },
+      "why": "Ordinary online purchase on a card."
+    },
+    {
+      "id": "N11",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 35.0,
+        "currency": "USD",
+        "payee_name": "Dr. Mehta Clinic",
+        "is_new_payee": false,
+        "payment_method": "card",
+        "payee_note": "Doctor visit copay",
+        "message_text": null,
+        "voice_transcript": null,
+        "channel": "in_person"
+      },
+      "expected": {
+        "risk_level": "low",
+        "action": "capture",
+        "tactics": [],
+        "calm_question_theme": null
+      },
+      "why": "Usual clinic copay."
+    },
+    {
+      "id": "N12",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 215.5,
+        "currency": "USD",
+        "payee_name": "Secure Life Insurance",
+        "is_new_payee": false,
+        "payment_method": "bank_transfer",
+        "payee_note": "Quarterly premium, please pay by the 15th",
+        "message_text": "Your premium is due on the 15th. Thank you for being a customer for 12 years.",
+        "voice_transcript": null,
+        "channel": "email"
+      },
+      "expected": {
+        "risk_level": "low",
+        "action": "capture",
+        "tactics": [],
+        "calm_question_theme": null
+      },
+      "why": "Long-term insurer, regular premium, normal due date."
+    },
+    {
+      "id": "N13",
+      "label": "normal",
+      "scam_type": null,
+      "input": {
+        "amount": 6500.0,
+        "currency": "USD",
+        "payee_name": "Apex Roofing Contractors",
+        "is_new_payee": true,
+        "payment_method": "bank_transfer",
+        "payee_note": "50 percent deposit, signed contract dated Nov 2",
+        "message_text": "Attached is the signed contract and the license number. Our team can start next Monday. You discussed this with your son at the site visit.",
+        "voice_transcript": null,
+        "channel": "email"
+      },
+      "expected": {
+        "risk_level": "medium",
+        "action": "hold",
+        "tactics": [
+          "new_payee"
+        ],
+        "calm_question_theme": "confirm the contract with a family member before paying"
+      },
+      "why": "Ambiguous case: legitimate but large and to a new payee. Should be paused for family co-sign and then approved, to test the hold-then-approve path without a scam."
+    }
+  ]
+}
