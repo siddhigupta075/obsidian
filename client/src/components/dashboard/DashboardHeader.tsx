@@ -1,4 +1,4 @@
-import { DashboardStats } from '../../types/dashboard'
+import type { DashboardStats } from '../../types/dashboard'
 
 interface DashboardHeaderProps {
   stats: DashboardStats

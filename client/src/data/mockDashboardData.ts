@@ -1,4 +1,4 @@
-import { FamilyTransaction, FamilyMember, DashboardStats } from '../types/dashboard'
+import type { FamilyTransaction, FamilyMember, DashboardStats } from '../types/dashboard'
 
 export const initialPendingTransactions: FamilyTransaction[] = [
   {

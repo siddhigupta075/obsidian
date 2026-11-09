@@ -25,6 +25,10 @@ export interface IAiResult {
   reasons: string[];
   questionForElder: string;
   familySummary: string;
+  riskScore?: number;
+  tactics?: string[];
+  explanation?: string;
+  source?: string;
 }
 
 export interface IPayment extends Document {
@@ -68,6 +72,10 @@ const PaymentSchema = new Schema<IPayment>(
       reasons: { type: [String], default: [] },
       questionForElder: { type: String, default: '' },
       familySummary: { type: String, default: '' },
+      riskScore: { type: Number },
+      tactics: { type: [String], default: [] },
+      explanation: { type: String, default: '' },
+      source: { type: String, default: 'fallback' },
     },
     aiFailed: { type: Boolean, default: false },
     risk: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], required: true },

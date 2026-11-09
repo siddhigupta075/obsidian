@@ -27,4 +27,27 @@ services:
         sync: false
       - key: XAI_API_KEY
         sync: false
+      - key: RISK_ENGINE_URL
+        value: https://second-sight-risk-engine.onrender.com
+
+  - type: web
+    name: second-sight-risk-engine
+    env: python
+    plan: free
+    region: oregon
+    buildCommand: "cd services/risk-engine && pip install -r requirements.txt"
+    startCommand: "cd services/risk-engine && uvicorn main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8001
+      - key: XAI_API_KEY
+        sync: false
+      - key: XAI_MODEL
+        value: grok-2-latest
+      - key: XAI_BASE_URL
+        value: https://api.x.ai/v1
+      - key: LLM_TIMEOUT_SECONDS
+        value: 20
 
