@@ -23,20 +23,9 @@ type SubmitState = 'idle' | 'analysing' | 'result'
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 function validateAmount(raw: string): string | null {
-  const trimmed = raw.trim()
-  if (!trimmed) return 'Please enter the payment amount.'
-
-  // Allow standard Indian commas (e.g. ₹50,000 or ₹1,00,000)
-  const sanitized = trimmed.replace(/,/g, '')
-
-  if (!/^\d+(\.\d{1,2})?$/.test(sanitized)) {
-    return 'Enter a valid amount (e.g. 500 or 1,250.50).'
-  }
-
-  const num = parseFloat(sanitized)
-  if (num <= 0) return 'Amount must be greater than $0.'
+  const num = parseFloat(raw.replace(/,/g, '').trim())
+  if (isNaN(num) || num <= 0) return 'Enter a valid amount (e.g. 50 or 500).'
   if (num > 100_000) return 'Amount cannot exceed $100,000.'
-
   return null
 }
 
@@ -136,7 +125,6 @@ export default function PaymentForm() {
       <PaymentResultView
         payee={form.payee}
         amount={form.amount}
-        purpose={form.purpose}
         analysis={analysisResult}
         onEdit={handleEdit}
         onReset={handleReset}

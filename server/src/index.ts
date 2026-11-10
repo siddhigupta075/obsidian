@@ -28,9 +28,10 @@ app.get('/health', (_req, res) => {
 app.use('/api', apiRouter);
 
 // Serve built frontend if client/dist exists (single-service Render deployment)
-const clientDistPath = path.resolve(process.cwd(), '../client/dist');
-const localDistPath = path.resolve(process.cwd(), 'client/dist');
-const distPath = fs.existsSync(clientDistPath) ? clientDistPath : fs.existsSync(localDistPath) ? localDistPath : null;
+const distPath = [
+  path.resolve(process.cwd(), '../client/dist'),
+  path.resolve(process.cwd(), 'client/dist'),
+].find(fs.existsSync);
 
 if (distPath) {
   app.use(express.static(distPath));
