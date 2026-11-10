@@ -1,38 +1,48 @@
 import { useState } from 'react'
 import type { AnalysisResult } from '../services/riskEvaluator'
+import PayPalButton from './PayPalButton'
+import PausedStatusView from './PausedStatusView'
 
 interface PaymentResultViewProps {
   payee: string
   amount: string
-  purpose: string
   analysis: AnalysisResult
   onEdit: () => void
   onReset: () => void
 }
 
-function formatINR(raw: string): string {
-  const sanitized = raw.replace(/,/g, '')
-  const num = parseFloat(sanitized)
-  if (isNaN(num)) return raw
-  return num.toLocaleString('en-IN', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  })
-}
-
 export default function PaymentResultView({
   payee,
   amount,
-  purpose,
   analysis,
   onEdit,
   onReset,
 }: PaymentResultViewProps) {
-  const [isRoutingToPayment, setIsRoutingToPayment] = useState(false)
+  const [showPayPal, setShowPayPal] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [completedStatus, setCompletedStatus] = useState<{
+    status: 'CAPTURED' | 'HELD'
+    message: string
+  } | null>(null)
 
   const isSafe = analysis.risk === 'LOW'
   const isMedium = analysis.risk === 'MEDIUM'
   const isHigh = analysis.risk === 'HIGH'
+
+  // If transaction has been authorized or captured, render the live Paused/Receipt view
+  if (completedStatus && analysis.paymentId) {
+    return (
+      <PausedStatusView
+        paymentId={analysis.paymentId}
+        payee={payee}
+        amount={amount}
+        risk={analysis.risk}
+        initialStatus={completedStatus.status}
+        initialMessage={completedStatus.message}
+        onReset={onReset}
+      />
+    )
+  }
 
   return (
     <div
@@ -43,9 +53,7 @@ export default function PaymentResultView({
     >
       {/* ── Visual Shield Illustration & Risk Badge ── */}
       <div className="mb-6 flex flex-col items-center">
-        {isSafe && <SafeIllustration />}
-        {isMedium && <SuspiciousIllustration />}
-        {isHigh && <HighRiskIllustration />}
+        <RiskIllustration risk={analysis.risk} />
 
         {/* Risk Badge */}
         <div className="mt-4">
@@ -84,104 +92,40 @@ export default function PaymentResultView({
             <>
               This transaction triggered caution flags. To keep your money safe,{' '}
               <strong className="text-amber-900 font-semibold">
-                no funds have been captured or moved
+                no funds will leave your account
               </strong>
-              . A trusted family member will be invited to review it.
+              . If you proceed, PayPal will reserve the funds and invite your family to review.
             </>
           )}
           {isHigh && (
             <>
               Critical safety alert: This payment exhibits patterns common to fraud or extortion.{' '}
               <strong className="text-rose-900 font-semibold">
-                Zero money has left your account.
-              </strong>
+                Zero money will leave your account.
+              </strong>{' '}
+              If you proceed, your family must confirm before funds can ever move.
             </>
           )}
         </p>
-      </div>
 
-      {/* ── Transaction Summary Card ── */}
-      <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-xs">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Payment Summary
-          </span>
-          <span className="text-[11px] font-semibold text-[#009F91] bg-[#DDF7F0] px-2 py-0.5 rounded">
-            Pre-Authorization
-          </span>
-        </div>
-
-        <div className="mt-3 space-y-2 text-sm">
-          <div className="flex justify-between items-baseline gap-4">
-            <span className="text-slate-500 font-medium">Recipient:</span>
-            <span className="font-semibold text-[#063B3B] text-right">{payee}</span>
-          </div>
-          <div className="flex justify-between items-baseline gap-4">
-            <span className="text-slate-500 font-medium">Amount:</span>
-            <span className="font-extrabold text-xl text-[#009F91] text-right">
-              ₹{formatINR(amount)}
-            </span>
-          </div>
-          <div className="flex justify-between items-baseline gap-4">
-            <span className="text-slate-500 font-medium">Stated Purpose:</span>
-            <span className="text-slate-700 text-right max-w-[65%] break-words italic">
-              "{purpose}"
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── AI Assessment Details Card ── */}
-      <div className="mt-4 w-full max-w-lg rounded-2xl border p-5 text-left text-sm transition-all shadow-2xs">
-        {isSafe ? (
-          <div className="space-y-3 border-[#009F91]/20 bg-[#F0FBF7]">
-            <p className="font-bold text-[#063B3B] flex items-center gap-2">
-              <svg className="w-4 h-4 text-[#009F91]" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Safety Evaluation Rationale
-            </p>
-            <ul className="space-y-1.5 text-xs text-slate-600">
-              {analysis.reasons.map((reason, idx) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <span className="text-[#009F91] font-bold">✓</span>
-                  <span>{reason}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : (
+        {/* Assessment Details Box */}
+        {analysis.reasons.length > 0 && (
           <div
-            className={`space-y-3 ${
-              isHigh ? 'border-rose-200 bg-rose-50/60' : 'border-amber-200 bg-amber-50/60'
+            className={`mt-4 w-full max-w-lg rounded-2xl border p-4 text-left ${
+              isSafe
+                ? 'border-[#009F91]/20 bg-[#DDF7F0]/40'
+                : isHigh
+                ? 'border-rose-200 bg-rose-50/50'
+                : 'border-amber-200 bg-amber-50/50'
             }`}
           >
-            <p
-              className={`font-bold flex items-center gap-2 ${
-                isHigh ? 'text-rose-900' : 'text-amber-900'
-              }`}
-            >
-              <svg
-                className={`w-4 h-4 ${isHigh ? 'text-rose-600' : 'text-amber-600'}`}
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              {isHigh ? 'Detected Danger Signals' : 'Flagged Attention Signals'}
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              Safety Analysis Summary
             </p>
             <ul className="space-y-1.5 text-xs text-slate-700">
               {analysis.reasons.map((reason, idx) => (
                 <li key={idx} className="flex items-start gap-2">
-                  <span className={isHigh ? 'text-rose-600 font-bold' : 'text-amber-600 font-bold'}>
+                  <span className={isHigh ? 'text-rose-600 font-bold' : isSafe ? 'text-[#009F91] font-bold' : 'text-amber-600 font-bold'}>
                     •
                   </span>
                   <span>{reason}</span>
@@ -191,14 +135,14 @@ export default function PaymentResultView({
 
             {analysis.questionForUser && (
               <div
-                className={`mt-2 rounded-xl border p-3 ${
+                className={`mt-3 rounded-xl border p-3 ${
                   isHigh ? 'border-rose-300 bg-white' : 'border-amber-300 bg-white'
                 }`}
               >
                 <p className="text-xs font-semibold text-slate-800">
                   ⚠️ Question to consider before continuing:
                 </p>
-                <p className="mt-1 text-xs italic text-slate-600">
+                <p className="mt-1 text-xs italic text-slate-700 font-medium">
                   "{analysis.questionForUser}"
                 </p>
               </div>
@@ -207,134 +151,127 @@ export default function PaymentResultView({
         )}
       </div>
 
-      {/* ── Status Message when Continuing ── */}
-      {isRoutingToPayment && (
-        <div className="mt-4 w-full max-w-lg rounded-xl border border-[#009F91]/30 bg-[#DDF7F0] p-4 text-xs font-medium text-[#063B3B] animate-pulse">
-          <p className="font-bold">Routing to Secure Gateway…</p>
-          <p className="mt-0.5">
-            Connecting to PayPal Authorize sandbox protocol. Payment is verified and holds can be executed.
-          </p>
+      {/* ── Error Banner ── */}
+      {errorMsg && (
+        <div className="mb-4 w-full max-w-md rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs text-rose-800">
+          {errorMsg}
         </div>
       )}
 
-      {/* ── Actions ── */}
-      <div className="mt-6 flex flex-col sm:flex-row items-center gap-3 w-full max-w-lg">
-        {isSafe ? (
-          <>
-            <button
-              type="button"
-              onClick={() => setIsRoutingToPayment(true)}
-              className="w-full sm:flex-1 py-3.5 px-6 rounded-xl bg-[#009F91] hover:bg-[#00877A] active:bg-[#063B3B] text-white text-base font-semibold shadow-xs transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#009F91]/30 cursor-pointer"
-            >
-              Continue to Payment →
-            </button>
-            <button
-              type="button"
-              onClick={onReset}
-              className="w-full sm:w-auto py-3.5 px-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-200 cursor-pointer"
-            >
-              Analyze Another Payment
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={onEdit}
-              className="w-full sm:flex-1 py-3.5 px-6 rounded-xl bg-[#063B3B] hover:bg-[#009F91] text-white text-base font-semibold shadow-xs transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#063B3B]/30 cursor-pointer"
-            >
-              ← Edit Payment Details
-            </button>
-            <button
-              type="button"
-              onClick={onReset}
-              className="w-full sm:w-auto py-3.5 px-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-200 cursor-pointer"
-            >
-              Analyze Another Payment
-            </button>
-          </>
-        )}
-      </div>
+      {/* ── PayPal Smart Button Container ── */}
+      {showPayPal ? (
+        <div className="w-full max-w-md rounded-2xl border border-[#009F91]/20 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
+            <span className="text-xs font-bold text-[#063B3B]">PayPal Sandbox Gateway</span>
+            <span className="text-[11px] font-mono text-[#009F91] bg-[#DDF7F0] px-2 py-0.5 rounded">
+              intent: AUTHORIZE
+            </span>
+          </div>
 
-      {/* ── Honest Disclaimer ── */}
+          <PayPalButton
+            paymentId={analysis.paymentId || 'local-demo'}
+            amount={parseFloat(amount.replace(/,/g, '')) || 100}
+            risk={analysis.risk}
+            onSuccess={(status, message) => {
+              setCompletedStatus({ status, message })
+            }}
+            onError={(err) => {
+              setErrorMsg(err)
+            }}
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowPayPal(false)}
+            className="mt-3 text-xs text-slate-500 hover:text-slate-800 underline cursor-pointer"
+          >
+            ← Cancel PayPal Checkout
+          </button>
+        </div>
+      ) : (
+        /* ── Action Buttons ── */
+        <div className="mt-4 flex flex-col sm:flex-row items-center gap-3 w-full max-w-lg">
+          {isSafe ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowPayPal(true)}
+                className="w-full sm:flex-1 py-3.5 px-6 rounded-xl bg-[#009F91] hover:bg-[#00877A] active:bg-[#063B3B] text-white text-base font-semibold shadow-xs transition-all duration-200 cursor-pointer"
+              >
+                Proceed to PayPal Checkout →
+              </button>
+              <button
+                type="button"
+                onClick={onReset}
+                className="w-full sm:w-auto py-3.5 px-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-all duration-200 cursor-pointer"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowPayPal(true)}
+                className="w-full sm:flex-1 py-3.5 px-6 rounded-xl bg-[#063B3B] hover:bg-[#009F91] text-white text-base font-semibold shadow-xs transition-all duration-200 cursor-pointer"
+              >
+                Proceed with Protected Hold →
+              </button>
+              <button
+                type="button"
+                onClick={onEdit}
+                className="w-full sm:w-auto py-3.5 px-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-all duration-200 cursor-pointer"
+              >
+                ← Edit Details
+              </button>
+              <button
+                type="button"
+                onClick={onReset}
+                className="w-full sm:w-auto py-3.5 px-4 rounded-xl text-slate-500 hover:text-slate-800 text-sm cursor-pointer"
+              >
+                Cancel
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Footer Policy Notice ── */}
       <p className="mt-4 text-[11px] text-slate-400 max-w-md text-center">
         {isSafe
-          ? 'Notice: This payment has not been completed. Funds are only transferred after your explicit PayPal confirmation.'
-          : 'Safety Policy: SecondSight uses the PayPal Authorize protocol. Monies remain in your account while under family review.'}
+          ? 'Notice: Standard transaction. Funds move only after your explicit PayPal confirmation.'
+          : 'Safety Guarantee: SecondSight uses the PayPal Authorize protocol. Monies remain reserved in your account until family confirms.'}
       </p>
     </div>
   )
 }
 
-// ─── Custom Illustrations ─────────────────────────────────────────────────────
+// ─── Custom SVG Illustrations ──────────────────────────────────────────────────
 
-function SafeIllustration() {
-  return (
-    <div className="relative flex h-24 w-24 items-center justify-center">
-      <div className="absolute h-full w-full rounded-full bg-[#DDF7F0] animate-pulse-subtle" />
-      <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#009F91] to-[#063B3B] text-white shadow-md">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-9 w-9 text-white"
-          aria-hidden="true"
-        >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <path d="m9 12 2 2 4-4" />
+function RiskIllustration({ risk }: { risk: string }) {
+  if (risk === 'LOW') {
+    return (
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#DDF7F0] text-[#009F91]">
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
       </div>
-    </div>
-  )
-}
-
-function SuspiciousIllustration() {
-  return (
-    <div className="relative flex h-24 w-24 items-center justify-center">
-      <div className="absolute h-full w-full rounded-full bg-amber-100 animate-pulse-subtle" />
-      <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 text-white shadow-md">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-9 w-9 text-white"
-          aria-hidden="true"
-        >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <line x1="10" y1="9" x2="10" y2="15" />
-          <line x1="14" y1="9" x2="14" y2="15" />
+    )
+  }
+  if (risk === 'MEDIUM') {
+    return (
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-amber-600">
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       </div>
-    </div>
-  )
-}
-
-function HighRiskIllustration() {
+    )
+  }
   return (
-    <div className="relative flex h-24 w-24 items-center justify-center">
-      <div className="absolute h-full w-full rounded-full bg-rose-100 animate-pulse-subtle" />
-      <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-600 to-[#063B3B] text-white shadow-md">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-9 w-9 text-white"
-          aria-hidden="true"
-        >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <line x1="12" y1="8" x2="12" y2="12" />
-          <line x1="12" y1="16" x2="12.01" y2="16" />
-        </svg>
-      </div>
+    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 animate-bounce">
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
+      </svg>
     </div>
   )
 }

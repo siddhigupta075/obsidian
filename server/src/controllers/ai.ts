@@ -78,35 +78,49 @@ export function getFailSafeResult(): AiEvaluationResult {
 }
 
 async function callGemini(apiKey: string, prompt: string, signal: AbortSignal): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    signal,
-    body: JSON.stringify({
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: `${SYSTEM_PROMPT}\n\nTransaction to evaluate:\n${prompt}` }],
-        },
-      ],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.1,
-      },
-    }),
-  });
+  const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+  for (const model of models) {
+    if (signal.aborted) break;
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal,
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `${SYSTEM_PROMPT}\n\nTransaction to evaluate:\n${prompt}` }],
+            },
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.1,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        lastError = new Error(`Gemini API (${model}) error: ${response.status} - ${errorText.substring(0, 100)}`);
+        continue;
+      }
+
+      const data = (await response.json()) as any;
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (rawText) {
+        return rawText;
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') throw err;
+      lastError = err;
+    }
   }
 
-  const data = (await response.json()) as any;
-  const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!rawText) {
-    throw new Error('Gemini response missing content text');
-  }
-  return rawText;
+  throw lastError || new Error('All Gemini model fallbacks failed');
 }
 
 async function callXAi(apiKey: string, prompt: string, signal: AbortSignal): Promise<string> {
@@ -225,8 +239,12 @@ export async function evaluateAiScam(input: AiEvaluationInput): Promise<AiEvalua
     message: input.message || '',
   });
 
+<<<<<<< HEAD
+=======
+  // 6500ms timeout for LLM call with multi-model fallback
+>>>>>>> origin/main
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 4000);
+  const timeoutId = setTimeout(() => controller.abort(), 6500);
 
   try {
     let rawText: string | null = null;

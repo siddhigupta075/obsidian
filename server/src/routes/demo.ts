@@ -46,6 +46,7 @@ router.get('/users', async (_req: Request, res: Response) => {
     const { elder, family, link } = await getOrCreateDemoUsers();
 
     return res.status(200).json({
+      paypalClientId: process.env.PAYPAL_CLIENT_ID || '',
       elder: {
         _id: elder._id.toString(),
         name: elder.name,
