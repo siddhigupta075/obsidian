@@ -90,7 +90,7 @@ export default function PaymentAnalysisView({ payee, amount }: PaymentAnalysisVi
         </h3>
 
         <p className="text-sm font-medium text-slate-500">
-          Analyzing transaction to <strong className="text-slate-700">{payee}</strong> for ₹{amount}
+          Analyzing transaction to <strong className="text-slate-700">{payee}</strong> for ${amount}
         </p>
       </div>
 

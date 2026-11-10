@@ -10,7 +10,8 @@ export interface NotificationPayload {
 
 export async function notifyFamilyOfHold(payload: NotificationPayload): Promise<void> {
   const { elderName, payeeLabel, amount, risk, holdToken, familySummary } = payload;
-  const approverLink = `${process.env.APP_BASE_URL || 'http://localhost:3000'}/family/hold/${holdToken}`;
+  const appBaseUrl = process.env.APP_BASE_URL || 'http://localhost:5173';
+  const approverLink = `${appBaseUrl}/?role=family`;
 
   const message = `[Second Sight Alert] A ${risk}-risk payment of $${amount.toFixed(
     2

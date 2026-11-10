@@ -9,6 +9,7 @@
     "start": "npm --prefix server start",
     "seed": "npm --prefix server run seed",
     "test:ai": "npm --prefix server run test:ai",
+    "test:lifecycle": "npm --prefix server run test:lifecycle",
     "risk:start": "cd services/risk-engine && uvicorn main:app --port 8001",
     "risk:test": "pytest services/risk-engine/tests",
     "risk:eval": "python3 services/risk-engine/evaluate.py"

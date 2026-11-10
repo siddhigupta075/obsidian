@@ -10,10 +10,11 @@ interface HoldItem {
   scamType?: string
   reasons: string[]
   familySummary?: string
-  expiresAt: string
+  expiresAt?: string | null
   status: 'HELD' | 'PROCESSING' | 'CAPTURED' | 'VOIDED'
   decision?: 'APPROVED' | 'DECLINED' | 'EXPIRED' | null
   createdAt?: string
+  decidedAt?: string
 }
 
 interface DemoIdentity {
@@ -322,7 +323,7 @@ export default function FamilyDashboardView() {
 
                     <div className="mt-4 flex items-center justify-between text-[11px] text-slate-400 pt-3 border-t border-slate-100">
                       <span>Zero-Liability Hold · PayPal Authorization ID: {hold.paymentId.substring(0, 12)}</span>
-                      <span>Auto-expires if unreviewed: {new Date(hold.expiresAt).toLocaleTimeString()}</span>
+                      <span>Auto-expires if unreviewed: {hold.expiresAt ? new Date(hold.expiresAt).toLocaleTimeString() : 'N/A'}</span>
                     </div>
                   </div>
                 ))}
@@ -384,7 +385,11 @@ export default function FamilyDashboardView() {
                           )}
                         </td>
                         <td className="py-3.5 px-4 text-slate-400">
-                          {new Date(h.expiresAt).toLocaleDateString()}
+                          {h.decidedAt
+                            ? new Date(h.decidedAt).toLocaleDateString()
+                            : h.createdAt
+                            ? new Date(h.createdAt).toLocaleDateString()
+                            : '—'}
                         </td>
                       </tr>
                     ))}

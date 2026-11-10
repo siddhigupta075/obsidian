@@ -25,7 +25,7 @@ type SubmitState = 'idle' | 'analysing' | 'result'
 function validateAmount(raw: string): string | null {
   const num = parseFloat(raw.replace(/,/g, '').trim())
   if (isNaN(num) || num <= 0) return 'Enter a valid amount (e.g. 50 or 500).'
-  if (num > 100_000) return 'Amount cannot exceed $100,000.'
+  if (num > 10_000) return 'Amount cannot exceed $10,000.'
   return null
 }
 
@@ -82,6 +82,7 @@ export default function PaymentForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (submitState !== 'idle') return
     setSubmitError(null)
 
     const validationErrors = validate(form)
@@ -201,13 +202,13 @@ export default function PaymentForm() {
           )}
         </div>
 
-        {/* Amount (INR) */}
+        {/* Amount (USD) */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label htmlFor="amount" className="block text-sm font-semibold text-[#063B3B]">
-              Payment Amount (INR)
+              Payment Amount (USD)
             </label>
-            <span className="text-[11px] font-medium text-slate-500">USD ($)</span>
+            <span className="text-[11px] font-medium text-slate-500">US Dollars ($)</span>
           </div>
           <div className="relative rounded-xl shadow-2xs">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#063B3B] font-bold text-lg">

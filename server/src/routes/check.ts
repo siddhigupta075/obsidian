@@ -109,9 +109,9 @@ router.post('/', async (req: Request, res: Response) => {
       paymentId,
       risk: finalRisk,
       reasons: reasons.slice(0, 4),
-      questionForElder:
-        aiResult.questionForElder ||
-        'Did someone ask you to send this money right now?',
+      questionForElder: willHold
+        ? (aiResult.questionForElder || 'Did someone ask you to send this money right now?')
+        : undefined,
       willHold,
     });
   } catch (err: any) {

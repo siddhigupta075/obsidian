@@ -44,8 +44,13 @@ export interface IPayment extends Document {
   risk: PaymentRisk;
   paypalOrderId?: string;
   paypalAuthorizationId?: string;
+  paypalAuthorizationRequestId?: string;
+  paypalCaptureRequestId?: string;
+  paypalVoidRequestId?: string;
   paypalCaptureId?: string;
   status: PaymentStatus;
+  processingAction?: 'CREATE_ORDER' | 'AUTHORIZE' | 'CAPTURE' | 'VOID' | null;
+  processingStartedAt?: Date | null;
   holdToken: string;
   expiresAt?: Date;
   decision: PaymentDecision;
@@ -81,6 +86,9 @@ const PaymentSchema = new Schema<IPayment>(
     risk: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], required: true },
     paypalOrderId: { type: String, index: true },
     paypalAuthorizationId: { type: String, index: true },
+    paypalAuthorizationRequestId: { type: String },
+    paypalCaptureRequestId: { type: String },
+    paypalVoidRequestId: { type: String },
     paypalCaptureId: { type: String },
     status: {
       type: String,
@@ -97,6 +105,13 @@ const PaymentSchema = new Schema<IPayment>(
       default: 'CHECKED',
       index: true,
     },
+    processingAction: {
+      type: String,
+      enum: ['CREATE_ORDER', 'AUTHORIZE', 'CAPTURE', 'VOID', null],
+      default: null,
+      index: true,
+    },
+    processingStartedAt: { type: Date, index: true },
     holdToken: { type: String, required: true, unique: true, index: true },
     expiresAt: { type: Date, index: true },
     decision: {

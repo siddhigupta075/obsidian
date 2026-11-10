@@ -70,6 +70,26 @@ export interface CreateOrderParams {
   referenceId: string;
 }
 
+export async function getPayPalOrder(orderId: string): Promise<any> {
+  const token = await getPayPalAccessToken();
+  const baseUrl = getPayPalBaseUrl();
+
+  const response = await fetch(`${baseUrl}/v2/checkout/orders/${orderId}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`PayPal Get Order failed (${response.status}): ${errorText}`);
+  }
+
+  return response.json();
+}
+
 export async function createPayPalOrder(params: CreateOrderParams): Promise<{ id: string }> {
   const token = await getPayPalAccessToken();
   const baseUrl = getPayPalBaseUrl();
@@ -113,16 +133,25 @@ export interface AuthorizeOrderResult {
   status: string;
 }
 
-export async function authorizePayPalOrder(orderId: string): Promise<AuthorizeOrderResult> {
+export async function authorizePayPalOrder(
+  orderId: string,
+  idempotencyKey?: string
+): Promise<AuthorizeOrderResult> {
   const token = await getPayPalAccessToken();
   const baseUrl = getPayPalBaseUrl();
 
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+
+  if (idempotencyKey) {
+    headers['PayPal-Request-Id'] = idempotencyKey;
+  }
+
   const response = await fetch(`${baseUrl}/v2/checkout/orders/${orderId}/authorize`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -137,9 +166,15 @@ export async function authorizePayPalOrder(orderId: string): Promise<AuthorizeOr
     throw new Error('PayPal authorization response missing authorization ID');
   }
 
+  const status = authorization.status || 'CREATED';
+  const validStatuses = ['CREATED', 'PENDING'];
+  if (!validStatuses.includes(status)) {
+    throw new Error(`PayPal authorization returned non-successful status: ${status}`);
+  }
+
   return {
     authorizationId: authorization.id,
-    status: authorization.status || 'CREATED',
+    status,
   };
 }
 
@@ -173,9 +208,29 @@ export async function capturePayPalAuthorization(
   }
 
   const data = (await response.json()) as any;
+
+  if (!data || typeof data !== 'object') {
+    throw new Error('PayPal capture returned empty or malformed response');
+  }
+
+  if (!data.id) {
+    throw new Error('PayPal capture response missing capture ID');
+  }
+
+  if (!data.status) {
+    throw new Error('PayPal capture response missing status');
+  }
+
+  // Section 2: Strict PayPal capture validation
+  // Only accept the documented successful completion status (COMPLETED).
+  // Never default missing status to COMPLETED.
+  if (data.status !== 'COMPLETED') {
+    throw new Error(`PayPal capture returned non-completed status: ${data.status}`);
+  }
+
   return {
     captureId: data.id,
-    status: data.status || 'COMPLETED',
+    status: data.status,
   };
 }
 

@@ -84,8 +84,8 @@ export function evaluateLocalRules(input: EvaluationInput): AnalysisResult {
   }
 
   // 8. Amount threshold check
-  if (input.amount > 50000) {
-    flags.push(`High transaction amount (₹${input.amount.toLocaleString('en-IN')}) exceeds safe first-touch threshold`)
+  if (input.amount > 1000) {
+    flags.push(`High transaction amount ($${input.amount.toLocaleString('en-US')}) exceeds safe first-touch threshold`)
     riskScore = Math.max(riskScore, 1)
   }
 
