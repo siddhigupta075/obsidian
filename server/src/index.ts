@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
@@ -26,16 +27,29 @@ app.get('/health', (_req, res) => {
 // Mount Main API Routes
 app.use('/api', apiRouter);
 
-// Root informative endpoint
-app.get('/', (_req, res) => {
-  res.status(200).json({
-    name: 'Second Sight API',
-    tagline: 'Pause the payment. Not the person.',
-    status: 'online',
-    docs: '/api-docs',
-    health: '/health',
+// Serve built frontend if client/dist exists (single-service Render deployment)
+const clientDistPath = path.resolve(process.cwd(), '../client/dist');
+const localDistPath = path.resolve(process.cwd(), 'client/dist');
+const distPath = fs.existsSync(clientDistPath) ? clientDistPath : fs.existsSync(localDistPath) ? localDistPath : null;
+
+if (distPath) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path === '/health') return next();
+    res.sendFile(path.join(distPath, 'index.html'));
   });
-});
+} else {
+  // Root informative fallback when frontend is not built
+  app.get('/', (_req, res) => {
+    res.status(200).json({
+      name: 'Second Sight API',
+      tagline: 'Pause the payment. Not the person.',
+      status: 'online',
+      docs: '/api-docs',
+      health: '/health',
+    });
+  });
+}
 
 // Secondary Guard: Background lazy check interval every 30 seconds
 const BACKGROUND_CHECK_INTERVAL_MS = 30000;

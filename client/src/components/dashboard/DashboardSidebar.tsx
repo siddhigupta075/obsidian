@@ -1,4 +1,4 @@
-import { DashboardNavTab } from '../../types/dashboard'
+import type { DashboardNavTab } from '../../types/dashboard'
 
 interface DashboardSidebarProps {
   activeTab: DashboardNavTab
