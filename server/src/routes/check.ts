@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
+import mongoose from 'mongoose';
 import { FamilyLink } from '../models/FamilyLink.js';
 import { Payment, PaymentRisk } from '../models/Payment.js';
 import { evaluateRules } from '../controllers/risk.js';
@@ -28,6 +29,15 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Amount must be greater than zero.' });
     }
 
+<<<<<<< HEAD
+    // 1. Fetch spending limits & family link
+    let amountLimit = 100;
+    let familyId = elderId;
+    if (mongoose.connection.readyState === 1) {
+      const link = await FamilyLink.findOne({ elderId });
+      amountLimit = link?.amountLimit ?? 100;
+      familyId = link?.familyId || elderId; // Fallback to elderId if not yet linked
+=======
     // 1. Resolve valid elder and family identity (fallback to seeded demo users)
     let validElderId = elderId;
     let validFamilyId = null;
@@ -42,6 +52,7 @@ router.post('/', async (req: Request, res: Response) => {
       const link = await FamilyLink.findOne({ elderId: validElderId });
       amountLimit = link?.amountLimit ?? 100;
       validFamilyId = link?.familyId || validElderId;
+>>>>>>> origin/main
     }
 
     // 2. Deterministic Rule Evaluation (risk.ts)
@@ -70,6 +81,24 @@ router.post('/', async (req: Request, res: Response) => {
     const holdToken = uuidv4();
 
     // 5. Persist locked payment record (Rule #1: Server sets amount and payee)
+<<<<<<< HEAD
+    let paymentId = uuidv4();
+    if (mongoose.connection.readyState === 1) {
+      const payment = new Payment({
+        elderId,
+        familyId,
+        amount,
+        currency: 'USD',
+        payeeLabel,
+        message: message || '',
+        rulesResult,
+        aiResult,
+        aiFailed,
+        risk: finalRisk,
+        status: 'CHECKED',
+        holdToken,
+      });
+=======
     const payment = new Payment({
       elderId: validElderId,
       familyId: validFamilyId,
@@ -84,11 +113,14 @@ router.post('/', async (req: Request, res: Response) => {
       status: 'CHECKED',
       holdToken,
     });
+>>>>>>> origin/main
 
-    await payment.save();
+      await payment.save();
+      paymentId = payment._id.toString();
+    }
 
     return res.status(200).json({
-      paymentId: payment._id.toString(),
+      paymentId,
       risk: finalRisk,
       reasons: reasons.slice(0, 4),
       questionForElder:

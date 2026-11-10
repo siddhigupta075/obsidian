@@ -25,6 +25,11 @@ export interface AiEvaluationInput {
   amount: number;
   payeeLabel: string;
   message?: string;
+  isNewPayee?: boolean;
+  paymentMethod?: string;
+  payeeNote?: string;
+  voiceTranscript?: string;
+  channel?: string;
 }
 
 export interface AiEvaluationResult {
@@ -34,6 +39,10 @@ export interface AiEvaluationResult {
     reasons: string[];
     questionForElder: string;
     familySummary: string;
+    riskScore?: number;
+    tactics?: string[];
+    explanation?: string;
+    source?: string;
   };
   aiFailed: boolean;
 }
@@ -146,7 +155,81 @@ async function callXAi(apiKey: string, prompt: string, signal: AbortSignal): Pro
   return rawText;
 }
 
+async function callPythonRiskEngine(
+  baseUrl: string,
+  input: AiEvaluationInput,
+  signal: AbortSignal
+): Promise<any> {
+  const url = `${baseUrl.replace(/\/$/, '')}/score`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal,
+    body: JSON.stringify({
+      amount: input.amount,
+      currency: 'USD',
+      payee_name: input.payeeLabel,
+      is_new_payee: input.isNewPayee,
+      payment_method: input.paymentMethod,
+      payee_note: input.payeeNote,
+      message_text: input.message,
+      voice_transcript: input.voiceTranscript,
+      channel: input.channel,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Python risk engine responded with status ${response.status}: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
 export async function evaluateAiScam(input: AiEvaluationInput): Promise<AiEvaluationResult> {
+  const riskEngineUrl = process.env.RISK_ENGINE_URL || 'http://localhost:8001';
+
+  // 1. Primary path: Call the Python Risk Engine service with 15s timeout
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const pyData = await callPythonRiskEngine(riskEngineUrl, input, controller.signal);
+    clearTimeout(timeoutId);
+
+    const riskLevelStr = (pyData.risk_level || pyData.risk || 'medium').toLowerCase();
+    const riskLevel: PaymentRisk =
+      riskLevelStr === 'high' ? 'HIGH' : riskLevelStr === 'medium' ? 'MEDIUM' : 'LOW';
+
+    const reasons: string[] =
+      Array.isArray(pyData.tactics) && pyData.tactics.length > 0
+        ? pyData.tactics
+        : pyData.explanation
+        ? [pyData.explanation]
+        : ['Automated risk assessment performed'];
+
+    return {
+      aiResult: {
+        risk: riskLevel,
+        scamType: (pyData.tactics && pyData.tactics[0]) || pyData.scamType || 'other',
+        reasons,
+        questionForElder: pyData.calm_question || pyData.questionForElder || '',
+        familySummary: pyData.family_summary || pyData.familySummary || '',
+        riskScore: typeof pyData.risk_score === 'number' ? pyData.risk_score : undefined,
+        tactics: Array.isArray(pyData.tactics) ? pyData.tactics : [],
+        explanation: pyData.explanation || '',
+        source: pyData.source || 'fallback',
+      },
+      aiFailed: pyData.source === 'fallback',
+    };
+  } catch (pyErr: any) {
+    console.warn(
+      `[AI] Python risk engine at ${riskEngineUrl} unavailable or timed out: ${
+        pyErr?.message || pyErr
+      }. Proceeding to fallback.`
+    );
+  }
+
+  // 2. Secondary path: Direct LLM or fail-safe default if Python service is down
   const geminiKey = process.env.GEMINI_API_KEY;
   const xaiKey = process.env.XAI_API_KEY;
 
@@ -156,7 +239,10 @@ export async function evaluateAiScam(input: AiEvaluationInput): Promise<AiEvalua
     message: input.message || '',
   });
 
+<<<<<<< HEAD
+=======
   // 6500ms timeout for LLM call with multi-model fallback
+>>>>>>> origin/main
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 6500);
 
@@ -168,18 +254,14 @@ export async function evaluateAiScam(input: AiEvaluationInput): Promise<AiEvalua
     } else if (xaiKey && xaiKey !== 'your_xai_api_key_here') {
       rawText = await callXAi(xaiKey, prompt, controller.signal);
     } else {
-      // No active AI API key provided. Apply fail-safe default.
-      console.warn('[AI] No active GEMINI_API_KEY or XAI_API_KEY found. Activating fail-safe default.');
+      console.warn('[AI] No direct GEMINI_API_KEY or XAI_API_KEY found. Activating fail-safe default.');
       return getFailSafeResult();
     }
 
     clearTimeout(timeoutId);
 
-    // Clean JSON markdown fences if present
     const cleanJson = rawText.replace(/```(?:json)?\n?/g, '').trim();
     const parsedJson = JSON.parse(cleanJson);
-
-    // Strict Zod schema validation
     const validated = AiRiskResponseSchema.parse(parsedJson);
 
     return {
@@ -194,8 +276,7 @@ export async function evaluateAiScam(input: AiEvaluationInput): Promise<AiEvalua
     };
   } catch (error: any) {
     clearTimeout(timeoutId);
-    console.error('[AI] Scam evaluation failed or timed out:', error?.message || error);
-    // Never fail open - return fail-safe MEDIUM hold
+    console.error('[AI] Direct LLM scam evaluation failed:', error?.message || error);
     return getFailSafeResult();
   }
 }

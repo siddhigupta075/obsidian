@@ -5,8 +5,65 @@ This document defines the REST API contract for Second Sight. All requests and r
 ---
 
 ## Base URL
-- Local: `http://localhost:3000`
-- Production: `https://<render-service-name>.onrender.com`
+- Express Server: `http://localhost:3000` (Production: `https://second-sight.onrender.com`)
+- Python Risk Engine: `http://localhost:8001` (Production: `https://second-sight-risk-engine.onrender.com`)
+
+---
+
+## 0. AI Risk Engine Service (Python Grok Engine)
+
+The risk engine runs as an independent microservice (`services/risk-engine/`) on port 8001, providing real-time evaluation with xAI Grok and rule-based fallback.
+
+### `GET /health`
+Returns service status.
+```json
+{
+  "status": "ok"
+}
+```
+
+### `POST /score`
+Scores a proposed payment and returns a calm question for the elder, a plain-language summary for the family, and detected tactics.
+
+#### Request
+Accepts both snake_case and camelCase parameters.
+```json
+{
+  "amount": 2500,
+  "currency": "USD",
+  "payee_name": "Metro Bail Services",
+  "is_new_payee": true,
+  "payment_method": "wire",
+  "payee_note": "Bail for Tommy",
+  "message_text": "Grandma Tommy is in jail please wire money right now and don't tell mom and dad."
+}
+```
+
+#### Response (`200 OK`)
+```json
+{
+  "risk_score": 92,
+  "risk_level": "high",
+  "tactics": [
+    "urgency",
+    "secrecy",
+    "family_emergency",
+    "unusual_payment_method",
+    "new_payee"
+  ],
+  "calm_question": "Before this goes through, have you spoken directly to Tommy on his usual number?",
+  "family_summary": "A payment of $2,500 was requested via wire for an alleged grandchild emergency. Secrecy was requested from family members. Please verify Tommy's safety before approving.",
+  "explanation": "High risk driven by family emergency script, secrecy instructions, and wire transfer to a new payee.",
+  "confidence": 0.95,
+  "action": "hold",
+  "source": "llm",
+  "risk": "HIGH",
+  "questionForElder": "Before this goes through, have you spoken directly to Tommy on his usual number?",
+  "familySummary": "A payment of $2,500 was requested via wire for an alleged grandchild emergency...",
+  "reasons": ["urgency", "secrecy", "family_emergency"],
+  "willHold": true
+}
+```
 
 ---
 

@@ -124,7 +124,11 @@ export function evaluateLocalRules(input: EvaluationInput): AnalysisResult {
 export async function analyzePayment(input: EvaluationInput): Promise<AnalysisResult> {
   try {
     const controller = new AbortController()
+<<<<<<< HEAD
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
+=======
     const timeoutId = setTimeout(() => controller.abort(), 7000)
+>>>>>>> origin/main
 
     const response = await fetch('/api/check', {
       method: 'POST',

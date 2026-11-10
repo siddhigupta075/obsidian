@@ -27,6 +27,24 @@ paths:
                     type: boolean
                     example: true
 
+  /score:
+    post:
+      summary: Score payment risk (Risk Engine)
+      description: Evaluates transaction details with Grok (xAI) LLM or deterministic rule-based fallback, returning risk score, calm question, family summary, and tactics.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentScoreRequest'
+      responses:
+        '200':
+          description: Risk score evaluation and explanations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentScoreResponse'
+
   /api/check:
     post:
       summary: Pre-check payment risk
@@ -259,6 +277,90 @@ paths:
 
 components:
   schemas:
+    PaymentScoreRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          example: 500
+        currency:
+          type: string
+          default: USD
+          example: USD
+        paymentId:
+          type: string
+          example: "654c9876543210fedcba5678"
+        payeeLabel:
+          type: string
+          example: "Metro Bail Services"
+        isNewPayee:
+          type: boolean
+          example: true
+        paymentMethod:
+          type: string
+          example: "bank_transfer"
+        payeeNote:
+          type: string
+          example: "Bail for Tommy"
+        message:
+          type: string
+          example: "Tommy is in trouble, please send bail money"
+        voiceTranscript:
+          type: string
+        channel:
+          type: string
+          example: "voice_call"
+
+    PaymentScoreResponse:
+      type: object
+      required:
+        - risk_score
+        - risk_level
+        - tactics
+        - calm_question
+        - family_summary
+        - explanation
+        - confidence
+        - action
+        - source
+      properties:
+        risk_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 85
+        risk_level:
+          type: string
+          enum: [low, medium, high]
+          example: high
+        tactics:
+          type: array
+          items:
+            type: string
+          example: ["urgency", "secrecy", "family_emergency"]
+        calm_question:
+          type: string
+          example: "Before this goes through, have you spoken to Tommy directly on his usual number?"
+        family_summary:
+          type: string
+          example: "A payment of $500 was requested for an urgent bail emergency. Secrecy was requested."
+        explanation:
+          type: string
+          example: "High risk due to urgency and family emergency claims."
+        confidence:
+          type: number
+          example: 0.95
+        action:
+          type: string
+          enum: [hold, capture]
+          example: hold
+        source:
+          type: string
+          enum: [llm, fallback]
+          example: llm
+
     HoldDetail:
       type: object
       properties:

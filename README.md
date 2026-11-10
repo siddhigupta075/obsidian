@@ -86,6 +86,7 @@ For comprehensive technical specifications, see [docs/ARCHITECTURE.md](docs/ARCH
 ### 1. Prerequisites
 
 - Node.js (v18 or higher)
+- Python (v3.11 or higher)
 - npm or pnpm
 - A free [PayPal Developer](https://developer.paypal.com) account (Sandbox)
 - A free [MongoDB Atlas](https://www.mongodb.com/atlas) database connection string
@@ -96,6 +97,11 @@ For comprehensive technical specifications, see [docs/ARCHITECTURE.md](docs/ARCH
 git clone https://github.com/your-username/second-sight.git
 cd second-sight
 npm install
+
+# Install Python Risk Engine dependencies
+cd services/risk-engine
+pip install -r requirements.txt
+cd ../..
 ```
 
 ### 3. Environment Configuration
@@ -110,31 +116,42 @@ Populate the required keys:
 
 ```env
 PORT=3000
+RISK_ENGINE_URL=http://localhost:8001
 PAYPAL_CLIENT_ID=your_sandbox_client_id
 PAYPAL_SECRET=your_sandbox_secret
 PAYPAL_BASE=https://api-m.sandbox.paypal.com
 MONGODB_URI=your_mongodb_atlas_connection_string
-XAI_API_KEY=your_llm_api_key
+XAI_API_KEY=your_xai_api_key_here
 HOLD_MINUTES=2 # Set to 2 for quick demo testing; default is 1440 (24h)
 ```
 
-### 4. Seed Demo Users
+### 4. Start the Services
 
-Seed the database with a pre-configured elder, family member, and spending link:
-
+**Terminal 1 — Python Risk Engine (Port 8001):**
 ```bash
-npm run seed
+cd services/risk-engine
+uvicorn main:app --host 0.0.0.0 --port 8001
 ```
 
-### 5. Run the Application
-
-Run both server and client concurrently:
-
+**Terminal 2 — Node Backend & Vite Frontend:**
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000) (or the Vite port indicated in terminal) in your browser.
+
+### 5. Running AI Benchmark & Tests
+
+```bash
+# Run pytest test suite offline
+pytest services/risk-engine/tests
+
+# Run benchmark evaluation across 30 transactions
+python services/risk-engine/evaluate.py
+
+# Or force rule-based fallback without an API key
+python services/risk-engine/evaluate.py --fallback-only
+```
 
 ---
 
