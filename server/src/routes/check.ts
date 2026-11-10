@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import mongoose from 'mongoose';
 import { FamilyLink } from '../models/FamilyLink.js';
 import { Payment, PaymentRisk } from '../models/Payment.js';
 import { evaluateRules } from '../controllers/risk.js';
@@ -29,30 +28,37 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Amount must be greater than zero.' });
     }
 
-<<<<<<< HEAD
-    // 1. Fetch spending limits & family link
-    let amountLimit = 100;
-    let familyId = elderId;
-    if (mongoose.connection.readyState === 1) {
-      const link = await FamilyLink.findOne({ elderId });
-      amountLimit = link?.amountLimit ?? 100;
-      familyId = link?.familyId || elderId; // Fallback to elderId if not yet linked
-=======
     // 1. Resolve valid elder and family identity (fallback to seeded demo users)
-    let validElderId = elderId;
-    let validFamilyId = null;
+    let validElderId: mongoose.Types.ObjectId;
+    let validFamilyId: mongoose.Types.ObjectId;
     let amountLimit = 100;
 
-    if (!validElderId || !mongoose.isValidObjectId(validElderId)) {
+    if (!elderId || !mongoose.isValidObjectId(elderId)) {
       const demo = await getOrCreateDemoUsers();
-      validElderId = demo.elder._id;
-      validFamilyId = demo.family._id;
-      amountLimit = demo.link.amountLimit;
+      validElderId = demo.elder._id as mongoose.Types.ObjectId;
+      validFamilyId = demo.family._id as mongoose.Types.ObjectId;
+      amountLimit = demo.link.amountLimit ?? 100;
     } else {
+      validElderId = new mongoose.Types.ObjectId(elderId);
       const link = await FamilyLink.findOne({ elderId: validElderId });
-      amountLimit = link?.amountLimit ?? 100;
-      validFamilyId = link?.familyId || validElderId;
->>>>>>> origin/main
+      if (!link) {
+        return res.status(400).json({
+          error: 'No family link found for the provided elder ID.',
+        });
+      }
+      if (!link.familyId || !mongoose.isValidObjectId(link.familyId)) {
+        return res.status(400).json({
+          error: 'Invalid family ID associated with elder in family link.',
+        });
+      }
+      validFamilyId = link.familyId as mongoose.Types.ObjectId;
+      amountLimit = link.amountLimit ?? 100;
+    }
+
+    if (!mongoose.isValidObjectId(validElderId) || !mongoose.isValidObjectId(validFamilyId)) {
+      return res.status(400).json({
+        error: 'Invalid elder ID or family ID.',
+      });
     }
 
     // 2. Deterministic Rule Evaluation (risk.ts)
@@ -81,24 +87,6 @@ router.post('/', async (req: Request, res: Response) => {
     const holdToken = uuidv4();
 
     // 5. Persist locked payment record (Rule #1: Server sets amount and payee)
-<<<<<<< HEAD
-    let paymentId = uuidv4();
-    if (mongoose.connection.readyState === 1) {
-      const payment = new Payment({
-        elderId,
-        familyId,
-        amount,
-        currency: 'USD',
-        payeeLabel,
-        message: message || '',
-        rulesResult,
-        aiResult,
-        aiFailed,
-        risk: finalRisk,
-        status: 'CHECKED',
-        holdToken,
-      });
-=======
     const payment = new Payment({
       elderId: validElderId,
       familyId: validFamilyId,
@@ -113,11 +101,9 @@ router.post('/', async (req: Request, res: Response) => {
       status: 'CHECKED',
       holdToken,
     });
->>>>>>> origin/main
 
-      await payment.save();
-      paymentId = payment._id.toString();
-    }
+    await payment.save();
+    const paymentId = payment._id.toString();
 
     return res.status(200).json({
       paymentId,
@@ -135,4 +121,3 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 export default router;
-

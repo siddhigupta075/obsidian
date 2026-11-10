@@ -239,10 +239,7 @@ export async function evaluateAiScam(input: AiEvaluationInput): Promise<AiEvalua
     message: input.message || '',
   });
 
-<<<<<<< HEAD
-=======
   // 6500ms timeout for LLM call with multi-model fallback
->>>>>>> origin/main
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 6500);
 
