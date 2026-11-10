@@ -34,8 +34,8 @@ function validateAmount(raw: string): string | null {
   }
 
   const num = parseFloat(sanitized)
-  if (num <= 0) return 'Amount must be greater than ₹0.'
-  if (num > 10_00_000) return 'Amount cannot exceed ₹10,00,000.'
+  if (num <= 0) return 'Amount must be greater than $0.'
+  if (num > 100_000) return 'Amount cannot exceed $100,000.'
 
   return null
 }
@@ -109,11 +109,8 @@ export default function PaymentForm() {
       purpose: form.purpose,
     })
 
-    // Allow a smooth natural scan transition
-    setTimeout(() => {
-      setAnalysisResult(result)
-      setSubmitState('result')
-    }, 1200)
+    setAnalysisResult(result)
+    setSubmitState('result')
   }
 
   const handleEdit = () => {
@@ -196,11 +193,11 @@ export default function PaymentForm() {
             <label htmlFor="amount" className="block text-sm font-semibold text-[#063B3B]">
               Payment Amount (INR)
             </label>
-            <span className="text-[11px] font-medium text-slate-500">Supports standard Indian commas</span>
+            <span className="text-[11px] font-medium text-slate-500">USD ($)</span>
           </div>
           <div className="relative rounded-xl shadow-2xs">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#063B3B] font-bold text-lg">
-              ₹
+              $
             </div>
             <input
               id="amount"
