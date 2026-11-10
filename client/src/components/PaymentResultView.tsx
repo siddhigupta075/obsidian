@@ -29,6 +29,21 @@ export default function PaymentResultView({
   const isMedium = analysis.risk === 'MEDIUM'
   const isHigh = analysis.risk === 'HIGH'
 
+  const canProceed = Boolean(analysis.paymentId && analysis.isLocalEvaluation !== true)
+
+  const handleProceedToCheckout = () => {
+    if (!canProceed) {
+      setErrorMsg('Checkout is unavailable because a valid payment record was not created.')
+      return
+    }
+    setShowPayPal(true)
+  }
+
+  const checkoutUnavailableMessage = !canProceed
+    ? 'Checkout is unavailable because a valid payment record was not created.'
+    : null
+  const displayError = errorMsg || checkoutUnavailableMessage
+
   // If transaction has been authorized or captured, render the live Paused/Receipt view
   if (completedStatus && analysis.paymentId) {
     return (
@@ -152,14 +167,18 @@ export default function PaymentResultView({
       </div>
 
       {/* ── Error Banner ── */}
-      {errorMsg && (
-        <div className="mb-4 w-full max-w-md rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs text-rose-800">
-          {errorMsg}
+      {displayError && (
+        <div
+          role="alert"
+          className="mb-4 w-full max-w-md rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs text-rose-800 text-left flex items-center gap-2"
+        >
+          <span className="font-bold text-rose-600 shrink-0">⚠</span>
+          <span>{displayError}</span>
         </div>
       )}
 
       {/* ── PayPal Smart Button Container ── */}
-      {showPayPal ? (
+      {showPayPal && canProceed && analysis.paymentId ? (
         <div className="w-full max-w-md rounded-2xl border border-[#009F91]/20 bg-white p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
             <span className="text-xs font-bold text-[#063B3B]">PayPal Sandbox Gateway</span>
@@ -169,7 +188,7 @@ export default function PaymentResultView({
           </div>
 
           <PayPalButton
-            paymentId={analysis.paymentId || 'local-demo'}
+            paymentId={analysis.paymentId}
             amount={parseFloat(amount.replace(/,/g, '')) || 100}
             risk={analysis.risk}
             onSuccess={(status, message) => {
@@ -195,8 +214,11 @@ export default function PaymentResultView({
             <>
               <button
                 type="button"
-                onClick={() => setShowPayPal(true)}
-                className="w-full sm:flex-1 py-3.5 px-6 rounded-xl bg-[#009F91] hover:bg-[#00877A] active:bg-[#063B3B] text-white text-base font-semibold shadow-xs transition-all duration-200 cursor-pointer"
+                disabled={!canProceed}
+                onClick={handleProceedToCheckout}
+                className={`w-full sm:flex-1 py-3.5 px-6 rounded-xl bg-[#009F91] hover:bg-[#00877A] active:bg-[#063B3B] text-white text-base font-semibold shadow-xs transition-all duration-200 ${
+                  !canProceed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                }`}
               >
                 Proceed to PayPal Checkout →
               </button>
@@ -212,8 +234,11 @@ export default function PaymentResultView({
             <>
               <button
                 type="button"
-                onClick={() => setShowPayPal(true)}
-                className="w-full sm:flex-1 py-3.5 px-6 rounded-xl bg-[#063B3B] hover:bg-[#009F91] text-white text-base font-semibold shadow-xs transition-all duration-200 cursor-pointer"
+                disabled={!canProceed}
+                onClick={handleProceedToCheckout}
+                className={`w-full sm:flex-1 py-3.5 px-6 rounded-xl bg-[#063B3B] hover:bg-[#009F91] text-white text-base font-semibold shadow-xs transition-all duration-200 ${
+                  !canProceed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                }`}
               >
                 Proceed with Protected Hold →
               </button>

@@ -59,6 +59,7 @@ export default function PaymentForm() {
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitState, setSubmitState] = useState<SubmitState>('idle')
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const updateField =
     (field: keyof PaymentFormData) =>
@@ -81,6 +82,8 @@ export default function PaymentForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError(null)
+
     const validationErrors = validate(form)
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
@@ -91,25 +94,34 @@ export default function PaymentForm() {
 
     const sanitizedAmount = parseFloat(form.amount.replace(/,/g, ''))
 
-    // Run dynamic risk evaluation (calls backend /api/check if online, or local rules)
-    const result = await analyzePayment({
-      payee: form.payee,
-      amount: sanitizedAmount,
-      purpose: form.purpose,
-    })
+    try {
+      // Run dynamic risk evaluation (calls backend /api/check)
+      const result = await analyzePayment({
+        payee: form.payee,
+        amount: sanitizedAmount,
+        purpose: form.purpose,
+      })
 
-    setAnalysisResult(result)
-    setSubmitState('result')
+      setAnalysisResult(result)
+      setSubmitState('result')
+    } catch (err: any) {
+      setSubmitError(
+        err?.message || 'Payment analysis failed. Please verify your connection and try again.'
+      )
+      setSubmitState('idle')
+    }
   }
 
   const handleEdit = () => {
     setErrors({})
+    setSubmitError(null)
     setSubmitState('idle')
   }
 
   const handleReset = () => {
     setForm({ payee: '', amount: '', purpose: '' })
     setErrors({})
+    setSubmitError(null)
     setAnalysisResult(null)
     setSubmitState('idle')
   }
@@ -136,6 +148,20 @@ export default function PaymentForm() {
   return (
     <form onSubmit={handleSubmit} noValidate aria-label="Payment safety analysis form">
       <div className="space-y-5">
+        {submitError && (
+          <div
+            role="alert"
+            className="rounded-xl border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800 flex items-start gap-2.5 shadow-2xs"
+          >
+            <span className="text-rose-600 font-bold shrink-0 mt-0.5 text-base" aria-hidden="true">
+              ⚠
+            </span>
+            <div className="flex-1">
+              <p className="font-semibold text-rose-900">Safety Check Error</p>
+              <p className="mt-0.5 text-xs text-rose-700 leading-relaxed">{submitError}</p>
+            </div>
+          </div>
+        )}
         {/* Recipient / Payee Name */}
         <div>
           <label htmlFor="payee" className="block text-sm font-semibold text-[#063B3B] mb-1.5">

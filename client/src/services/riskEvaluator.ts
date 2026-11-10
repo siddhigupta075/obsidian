@@ -119,15 +119,14 @@ export function evaluateLocalRules(input: EvaluationInput): AnalysisResult {
 
 /**
  * Main evaluation orchestrator:
- * Attempts backend API check if online, falls back seamlessly to deterministic evaluation.
+ * Calls backend API /api/check. Throws an error if the request fails, times out,
+ * or returns an invalid assessment response.
  */
 export async function analyzePayment(input: EvaluationInput): Promise<AnalysisResult> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 7000)
+
   try {
-    const controller = new AbortController()
-
-    const timeoutId = setTimeout(() => controller.abort(), 7000)
-
-
     const response = await fetch('/api/check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -140,23 +139,45 @@ export async function analyzePayment(input: EvaluationInput): Promise<AnalysisRe
       signal: controller.signal,
     })
 
-    clearTimeout(timeoutId)
-
-    if (response.ok) {
-      const data = await response.json()
-      return {
-        risk: data.risk as RiskLevel,
-        reasons: Array.isArray(data.reasons) ? data.reasons : [],
-        questionForUser: data.questionForElder,
-        willHold: Boolean(data.willHold),
-        paymentId: data.paymentId,
-        isLocalEvaluation: false,
+    if (!response.ok) {
+      let errorMessage = `Payment safety check failed with status ${response.status}.`
+      try {
+        const errorData = await response.json()
+        if (errorData?.error && typeof errorData.error === 'string') {
+          errorMessage = errorData.error
+        }
+      } catch {
+        // Fall back to default error message if JSON parsing fails
       }
+      throw new Error(errorMessage)
     }
-  } catch {
-    // Backend offline or timeout — fall back to verified local rule evaluation
-  }
 
-  return evaluateLocalRules(input)
+    const data = await response.json()
+
+    if (!data || typeof data.paymentId !== 'string' || !data.paymentId.trim()) {
+      throw new Error('Payment safety check response is missing a valid payment ID.')
+    }
+
+    const validRisks: RiskLevel[] = ['LOW', 'MEDIUM', 'HIGH']
+    if (!data.risk || !validRisks.includes(data.risk)) {
+      throw new Error(`Invalid or missing risk assessment level: ${data.risk}`)
+    }
+
+    return {
+      risk: data.risk as RiskLevel,
+      reasons: Array.isArray(data.reasons) ? data.reasons : [],
+      questionForUser: data.questionForElder,
+      willHold: Boolean(data.willHold),
+      paymentId: data.paymentId,
+      isLocalEvaluation: false,
+    }
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Payment safety check timed out. Please check your connection and try again.')
+    }
+    throw error instanceof Error ? error : new Error(String(error))
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }
 

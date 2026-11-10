@@ -17,19 +17,18 @@ function getCredentials(): { clientId: string; secret: string } {
   return { clientId, secret };
 }
 
-function isMockMode(): boolean {
+export async function getPayPalAccessToken(): Promise<string> {
   const { clientId, secret } = getCredentials();
-  return (
+
+  if (
     !clientId ||
     !secret ||
     clientId.includes('your_paypal') ||
     secret.includes('your_paypal')
-  );
-}
-
-export async function getPayPalAccessToken(): Promise<string> {
-  if (isMockMode()) {
-    return 'mock_sandbox_access_token';
+  ) {
+    throw new Error(
+      'PayPal credentials are not configured or are set to placeholder values. Please set PAYPAL_CLIENT_ID and PAYPAL_SECRET in your environment.'
+    );
   }
 
   // Check cached token (with 60-second buffer)
@@ -38,7 +37,6 @@ export async function getPayPalAccessToken(): Promise<string> {
     return tokenCache.token;
   }
 
-  const { clientId, secret } = getCredentials();
   const auth = Buffer.from(`${clientId}:${secret}`).toString('base64');
   const baseUrl = getPayPalBaseUrl();
 
@@ -73,11 +71,6 @@ export interface CreateOrderParams {
 }
 
 export async function createPayPalOrder(params: CreateOrderParams): Promise<{ id: string }> {
-  if (isMockMode()) {
-    console.warn('[PayPal] Mock mode active: returning simulated orderId.');
-    return { id: `MOCK_ORDER_${uuidv4().substring(0, 12).toUpperCase()}` };
-  }
-
   const token = await getPayPalAccessToken();
   const baseUrl = getPayPalBaseUrl();
   const currency = params.currency || 'USD';
@@ -121,14 +114,6 @@ export interface AuthorizeOrderResult {
 }
 
 export async function authorizePayPalOrder(orderId: string): Promise<AuthorizeOrderResult> {
-  if (isMockMode()) {
-    console.warn('[PayPal] Mock mode active: returning simulated authorizationId.');
-    return {
-      authorizationId: `MOCK_AUTH_${uuidv4().substring(0, 12).toUpperCase()}`,
-      status: 'CREATED',
-    };
-  }
-
   const token = await getPayPalAccessToken();
   const baseUrl = getPayPalBaseUrl();
 
@@ -167,14 +152,6 @@ export async function capturePayPalAuthorization(
   authorizationId: string,
   idempotencyKey?: string
 ): Promise<CaptureResult> {
-  if (isMockMode()) {
-    console.warn('[PayPal] Mock mode active: returning simulated captureId.');
-    return {
-      captureId: `MOCK_CAP_${uuidv4().substring(0, 12).toUpperCase()}`,
-      status: 'COMPLETED',
-    };
-  }
-
   const token = await getPayPalAccessToken();
   const baseUrl = getPayPalBaseUrl();
   const requestId = idempotencyKey || uuidv4();
@@ -206,11 +183,6 @@ export async function voidPayPalAuthorization(
   authorizationId: string,
   idempotencyKey?: string
 ): Promise<void> {
-  if (isMockMode()) {
-    console.warn('[PayPal] Mock mode active: simulated void successful.');
-    return;
-  }
-
   const token = await getPayPalAccessToken();
   const baseUrl = getPayPalBaseUrl();
   const requestId = idempotencyKey || uuidv4();
