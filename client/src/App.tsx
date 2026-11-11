@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import ElderPaymentView from './pages/ElderPaymentView'
 import FamilyDashboardView from './pages/FamilyDashboardView'
+import { ChevronDownIcon, ChevronUpIcon } from './components/Icons'
 
 type ActiveRole = 'elder' | 'family'
 
 export default function App() {
   const [role, setRole] = useState<ActiveRole>('elder')
+  const [demoOpen, setDemoOpen] = useState(true)
 
   // Check URL parameter (?role=family or ?role=elder) for side-by-side windows
   useEffect(() => {
@@ -24,51 +26,77 @@ export default function App() {
   }
 
   return (
-    <div className="relative">
-      {/* ── Demo Role Switcher Toolbar (Fixed Top Bar) ── */}
-      <div className="bg-[#063B3B] text-white py-2 px-4 text-xs font-semibold flex items-center justify-between border-b border-[#009F91]/30 z-50 sticky top-0">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-[#009F91] animate-ping" />
-          <span className="font-extrabold tracking-wide uppercase text-[#DDF7F0]">
-            Second Sight Demo Switcher
-          </span>
-          <span className="text-white/40 hidden sm:inline">|</span>
-          <span className="text-white/70 hidden sm:inline">
-            Open two windows side-by-side to test the pause-and-protect flow
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5 bg-black/30 p-1 rounded-xl border border-white/10">
-          <button
-            type="button"
-            onClick={() => handleRoleChange('elder')}
-            className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-              role === 'elder'
-                ? 'bg-[#009F91] text-white font-bold shadow-xs'
-                : 'text-white/70 hover:text-white'
-            }`}
-          >
-            <span>👵</span>
-            <span>Elder Window</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleRoleChange('family')}
-            className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-              role === 'family'
-                ? 'bg-[#009F91] text-white font-bold shadow-xs'
-                : 'text-white/70 hover:text-white'
-            }`}
-          >
-            <span>👨‍👩‍👧</span>
-            <span>Family Approver</span>
-          </button>
-        </div>
-      </div>
-
+    <div className="relative min-h-screen flex flex-col bg-paper text-ink">
       {/* ── Render Selected View ── */}
       {role === 'elder' ? <ElderPaymentView /> : <FamilyDashboardView />}
+
+      {/* ── Collapsible Demo Role Switcher (Bottom-Right) ── */}
+      <aside
+        aria-label="Demo role switcher"
+        className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-50 max-w-[calc(100vw-1.5rem)]"
+      >
+        {demoOpen ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-control border border-line bg-surface p-1.5 shadow-card text-[0.8125rem] text-ink">
+            <span className="rounded-tag border border-line bg-paper px-2 py-1 text-[0.8125rem] font-semibold uppercase leading-none text-ink-2">
+              DEMO
+            </span>
+
+            <div className="flex items-center gap-1" role="group" aria-label="Switch demo view">
+              <button
+                type="button"
+                onClick={() => handleRoleChange('elder')}
+                aria-pressed={role === 'elder'}
+                className={`min-h-[48px] px-3 py-1.5 rounded-tag text-[0.8125rem] ui-transition cursor-pointer ${
+                  role === 'elder'
+                    ? 'bg-brand-tint text-brand font-semibold border border-brand'
+                    : 'bg-surface text-ink-2 hover:text-ink border border-transparent'
+                }`}
+              >
+                Elder
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleRoleChange('family')}
+                aria-pressed={role === 'family'}
+                className={`min-h-[48px] px-3 py-1.5 rounded-tag text-[0.8125rem] ui-transition cursor-pointer ${
+                  role === 'family'
+                    ? 'bg-brand-tint text-brand font-semibold border border-brand'
+                    : 'bg-surface text-ink-2 hover:text-ink border border-transparent'
+                }`}
+              >
+                Family
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setDemoOpen(false)}
+              aria-expanded="true"
+              aria-label="Collapse demo switcher"
+              className="min-h-[48px] min-w-[48px] inline-flex items-center justify-center rounded-tag text-ink-2 hover:text-ink hover:bg-paper ui-transition cursor-pointer"
+            >
+              <ChevronDownIcon />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setDemoOpen(true)}
+            aria-expanded="false"
+            aria-label="Expand demo role switcher"
+            className="min-h-[48px] inline-flex items-center gap-2 rounded-control border border-line bg-surface px-3 py-1.5 shadow-card text-[0.8125rem] text-ink hover:bg-paper ui-transition cursor-pointer"
+          >
+            <span className="rounded-tag border border-line bg-paper px-2 py-1 text-[0.8125rem] font-semibold uppercase leading-none text-ink-2">
+              DEMO
+            </span>
+            <span className="font-semibold text-ink">
+              {role === 'elder' ? 'Elder' : 'Family'}
+            </span>
+            <ChevronUpIcon className="text-ink-2" />
+          </button>
+        )}
+      </aside>
     </div>
   )
 }

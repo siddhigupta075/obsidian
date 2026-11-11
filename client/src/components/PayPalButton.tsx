@@ -145,24 +145,23 @@ export default function PayPalButton({
   }, [sdkReady, paymentId, onSuccess, onError])
 
   return (
-    <div className="w-full flex flex-col items-center">
+    <div className="w-full flex flex-col items-start">
       {loading && (
-        <div className="flex items-center gap-2 py-4 text-xs font-semibold text-slate-500">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#009F91] border-t-transparent" />
-          <span>Connecting to PayPal Sandbox Gateway (Intent: AUTHORIZE)...</span>
-        </div>
+        <p className="py-3 text-[0.9375rem] text-ink-2">
+          Loading PayPal checkout…
+        </p>
       )}
 
       <div
         ref={containerRef}
         id="paypal-button-container"
-        className="w-full max-w-md min-h-[50px] my-2"
+        className="w-full min-h-[50px] my-1"
       />
 
-      <p className="text-[11px] text-slate-500 mt-2 text-center">
+      <p className="mt-2 text-[0.9375rem] leading-[1.5] text-ink-3">
         {risk === 'LOW'
-          ? 'Safe transaction: Funds will be captured automatically upon PayPal confirmation.'
-          : 'Zero-Risk Authorization: Funds are held in escrow. Zero money moves until family review.'}
+          ? 'Your payment will be sent once you confirm in PayPal.'
+          : 'PayPal authorization only: no money moves until Sarah confirms.'}
       </p>
     </div>
   )

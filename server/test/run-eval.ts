@@ -88,8 +88,9 @@ async function runEvaluation() {
       console.log(`   Reasons: ${rulesResult.flags.concat(aiResult.reasons).join('; ')}`);
     }
 
-    // Pacing to stay within Gemini free tier 15 RPM
-    await new Promise((r) => setTimeout(r, 2200));
+    // Pacing to stay within Gemini free tier 15 RPM (>= 4.2s total interval per request)
+    const remainingDelay = Math.max(2200, 4200 - duration);
+    await new Promise((r) => setTimeout(r, remainingDelay));
   }
 
   const catchRate = (caughtScams / totalScams) * 100;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CheckCircleIcon, ClockIcon, ShieldCheckIcon } from './Icons'
 
 interface PausedStatusViewProps {
   paymentId: string
@@ -52,140 +53,124 @@ export default function PausedStatusView({
   const isVoided = currentStatus === 'VOIDED'
 
   return (
-    <div
-      className="flex flex-col items-center py-6 text-center animate-fade-in"
-      role="status"
-      aria-live="polite"
-    >
-      {/* ── Status Shield Icon ── */}
-      <div className="mb-6 flex flex-col items-center">
-        {isHeld && (
-          <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-50 border-2 border-amber-300 text-amber-600 shadow-sm">
-            <span className="absolute -top-1 -right-1 flex h-4 w-4">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500"></span>
-            </span>
-            <svg className="h-10 w-10 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        )}
-
-        {isCaptured && (
-          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[#DDF7F0] border-2 border-[#009F91] text-[#009F91] shadow-sm">
-            <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-        )}
-
-        {isVoided && (
-          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-50 border-2 border-emerald-400 text-emerald-600 shadow-sm">
-            <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
-        )}
-
-        {/* ── Status Badge ── */}
-        <div className="mt-4">
-          {isHeld && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3.5 py-1 text-xs font-bold text-amber-800">
-              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-              STATUS: PAUSED FOR A SECOND LOOK
-            </span>
-          )}
-          {isCaptured && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#009F91]/30 bg-[#DDF7F0] px-3.5 py-1 text-xs font-bold text-[#063B3B]">
-              <span className="h-2 w-2 rounded-full bg-[#009F91]" />
-              STATUS: PAYMENT COMPLETED
-            </span>
-          )}
-          {isVoided && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3.5 py-1 text-xs font-bold text-emerald-800">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              STATUS: FUNDS PROTECTED & VOIDED
-            </span>
-          )}
-        </div>
-
-        {/* ── Headline ── */}
-        <h2 className="mt-4 font-sans text-2xl sm:text-3xl font-extrabold tracking-tight text-[#063B3B]">
-          {isHeld && 'Paused for a Second Look'}
-          {isCaptured && 'Payment Approved & Sent'}
-          {isVoided && 'Safe! Your Family Stopped This Payment'}
-        </h2>
-
-        {/* ── Explanatory Copy ── */}
-        <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-md leading-relaxed">
-          {isHeld && (
-            <>
-              {statusMessage ||
-                'We placed this payment on a temporary hold before any money moved. A trusted family member was sent a review notice.'}
-            </>
-          )}
-          {isCaptured && (
-            <>
-              Your family confirmed this transaction is legitimate. PayPal has captured the reserved funds for{' '}
-              <strong className="text-slate-800 font-semibold">{payee}</strong>.
-            </>
-          )}
-          {isVoided && (
-            <>
-              {decision === 'DECLINED' ? (
-                <>
-                  Your family reviewed the payment request and declined it to protect you.{' '}
-                  <strong className="text-emerald-900 font-bold">
-                    Zero money left your account.
-                  </strong>{' '}
-                  The PayPal authorization was completely cancelled.
-                </>
-              ) : (
-                <>
-                  The cooling-off review window expired without confirmation.{' '}
-                  <strong className="text-emerald-900 font-bold">
-                    The transaction was automatically cancelled.
-                  </strong>
-                </>
-              )}
-            </>
-          )}
-        </p>
-      </div>
-
-      {/* ── Transaction Receipt Card ── */}
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left space-y-2.5 text-xs text-slate-600">
-        <div className="flex justify-between items-center pb-2 border-b border-slate-200">
-          <span className="text-slate-500 font-medium">Recipient</span>
-          <span className="font-bold text-slate-800 text-sm">{payee}</span>
-        </div>
-        <div className="flex justify-between items-center pb-2 border-b border-slate-200">
-          <span className="text-slate-500 font-medium">Amount</span>
-          <span className="font-bold text-[#063B3B] text-sm">${amount}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-slate-500 font-medium">PayPal Authorization</span>
-          <span className="font-mono text-slate-500">{paymentId.substring(0, 14)}...</span>
-        </div>
-      </div>
-
-      {/* ── Real-time Polling Feedback ── */}
+    <div className="py-2 text-left" role="status" aria-live="polite">
       {isHeld && (
-        <div className="mt-4 flex items-center gap-2 text-[11px] text-slate-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping" />
-          <span>Checking family decision live... (Checked {pollCount} times)</span>
+        <div className="rounded-card border border-hold-border bg-hold-tint p-5 sm:p-6">
+          <span className="inline-flex items-center gap-1.5 rounded-tag border border-hold-border bg-surface px-2.5 py-1 text-[0.875rem] font-semibold text-hold">
+            <ClockIcon />
+            <span>On hold</span>
+          </span>
+
+          <h2 className="mt-4 font-serif font-semibold text-[1.5rem] leading-[1.25] tracking-[-0.01em] text-ink">
+            We&apos;ve paused this payment.
+          </h2>
+
+          <p className="mt-2 text-[1.125rem] leading-[1.55] text-ink">
+            Sarah has been asked to take a look. Your money hasn&apos;t moved.
+          </p>
+
+          <dl className="mt-5 divide-y divide-hold-border rounded-control border border-hold-border bg-surface px-4 text-[1rem]">
+            <div className="flex items-baseline justify-between gap-4 py-3">
+              <dt className="text-ink-2">Recipient</dt>
+              <dd className="font-semibold text-ink text-right">{payee}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4 py-3">
+              <dt className="text-ink-2">Amount</dt>
+              <dd className="font-serif text-[1.375rem] font-semibold text-ink tabular-nums">
+                ${amount}
+              </dd>
+            </div>
+          </dl>
+
+          <p className="mt-4 flex items-center gap-2 text-[0.9375rem] leading-[1.5] text-ink-2">
+            <span aria-hidden="true" className="h-2 w-2 rounded-full bg-hold shrink-0" />
+            <span>
+              Waiting for Sarah · checked {pollCount === 0 ? 'just now' : '3 seconds ago'}
+            </span>
+          </p>
         </div>
       )}
 
-      {/* ── Action Button ── */}
-      <div className="mt-6 w-full max-w-md">
-        <button
-          type="button"
-          onClick={onReset}
-          className="w-full py-3.5 px-6 rounded-xl bg-[#063B3B] hover:bg-[#009F91] text-white text-base font-semibold shadow-xs transition-all duration-200 focus:outline-none cursor-pointer"
-        >
-          {isHeld ? 'Return to Home' : 'Start New Payment'}
-        </button>
+      {isCaptured && (
+        <div className="rounded-card border border-line bg-safe-tint p-5 sm:p-6">
+          <span className="inline-flex items-center gap-1.5 rounded-tag border border-line bg-surface px-2.5 py-1 text-[0.875rem] font-semibold text-safe">
+            <CheckCircleIcon />
+            <span>Approved</span>
+          </span>
+
+          <h2 className="mt-4 font-serif font-semibold text-[1.5rem] leading-[1.25] tracking-[-0.01em] text-ink">
+            Payment sent
+          </h2>
+
+          <p className="mt-2 text-[1.125rem] leading-[1.55] text-ink">
+            {statusMessage || `Your payment of $${amount} to ${payee} has been sent.`}
+          </p>
+
+          <dl className="mt-5 divide-y divide-line rounded-control border border-line bg-surface px-4 text-[1rem]">
+            <div className="flex items-baseline justify-between gap-4 py-3">
+              <dt className="text-ink-2">Recipient</dt>
+              <dd className="font-semibold text-ink text-right">{payee}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4 py-3">
+              <dt className="text-ink-2">Amount</dt>
+              <dd className="font-serif text-[1.375rem] font-semibold text-ink tabular-nums">
+                ${amount}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      )}
+
+      {isVoided && (
+        <div className="rounded-card border border-line bg-paper p-5 sm:p-6">
+          <span className="inline-flex items-center gap-1.5 rounded-tag border border-line bg-surface px-2.5 py-1 text-[0.875rem] font-semibold text-ink-2">
+            <ShieldCheckIcon />
+            <span>{decision === 'DECLINED' ? 'Declined' : 'Cancelled'}</span>
+          </span>
+
+          <h2 className="mt-4 font-serif font-semibold text-[1.5rem] leading-[1.25] tracking-[-0.01em] text-ink">
+            {decision === 'DECLINED' ? 'Payment declined' : 'Payment cancelled'}
+          </h2>
+
+          <p className="mt-2 text-[1.125rem] leading-[1.55] text-ink-2">
+            {decision === 'DECLINED'
+              ? 'Sarah declined this payment. Nothing was charged.'
+              : 'This payment was not confirmed in time. Nothing was charged.'}
+          </p>
+
+          <dl className="mt-5 divide-y divide-line rounded-control border border-line bg-surface px-4 text-[1rem]">
+            <div className="flex items-baseline justify-between gap-4 py-3">
+              <dt className="text-ink-2">Recipient</dt>
+              <dd className="font-semibold text-ink text-right">{payee}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4 py-3">
+              <dt className="text-ink-2">Amount</dt>
+              <dd className="font-serif text-[1.375rem] font-semibold text-ink tabular-nums">
+                ${amount}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      )}
+
+      <div className="mt-6">
+        {isHeld ? (
+          <button
+            type="button"
+            onClick={onReset}
+            className="min-h-[48px] px-2 text-[1.125rem] font-semibold text-brand hover:text-brand-hover underline underline-offset-4 ui-transition cursor-pointer"
+          >
+            Return to payment form
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onReset}
+            className="w-full min-h-[52px] px-6 py-3 rounded-control border-[1.5px] border-brand bg-surface text-brand hover:bg-brand-tint text-[1.125rem] font-semibold ui-transition cursor-pointer"
+          >
+            Start over
+          </button>
+        )}
       </div>
     </div>
   )

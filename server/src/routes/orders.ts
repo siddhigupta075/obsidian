@@ -38,11 +38,18 @@ router.post('/', async (req: Request, res: Response) => {
 
     const leaseCutoff = new Date(Date.now() - LEASE_MS);
 
-    // Section 4: Atomic transition CHECKED -> PROCESSING to prevent duplicate order creation
+    // Section 4: Atomic transition CHECKED -> PROCESSING (with stale lease recovery) to prevent duplicate order creation
     const claimedPayment = await Payment.findOneAndUpdate(
       {
         _id: paymentId,
-        status: 'CHECKED',
+        $or: [
+          { status: 'CHECKED' },
+          {
+            status: 'PROCESSING',
+            processingAction: 'CREATE_ORDER',
+            processingStartedAt: { $lt: leaseCutoff },
+          },
+        ],
       },
       {
         $set: {
@@ -85,6 +92,14 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(201).json({ orderId: order.id });
     } catch (orderErr: any) {
       console.error('[Route: orders] Error calling PayPal create order:', orderErr?.message || orderErr);
+      try {
+        await Payment.findOneAndUpdate(
+          { _id: claimedPayment._id, status: 'PROCESSING', processingAction: 'CREATE_ORDER' },
+          { $set: { status: 'CHECKED', processingAction: null, processingStartedAt: null } }
+        );
+      } catch (revertErr) {
+        console.error('[Route: orders] Error reverting CREATE_ORDER lock:', revertErr);
+      }
 
       return res.status(502).json({ error: 'Failed to initialize payment order with payment processor.' });
     }
@@ -141,7 +156,14 @@ router.post('/:orderId/authorize', async (req: Request, res: Response) => {
       const claimedPayment = await Payment.findOneAndUpdate(
         {
           paypalOrderId: orderId,
-          status: 'CREATED',
+          $or: [
+            { status: 'CREATED' },
+            {
+              status: 'PROCESSING',
+              processingAction: 'AUTHORIZE',
+              processingStartedAt: { $lt: leaseCutoff },
+            },
+          ],
         },
         {
           $set: {
@@ -233,7 +255,14 @@ router.post('/:orderId/authorize', async (req: Request, res: Response) => {
       const capturingPayment = await Payment.findOneAndUpdate(
         {
           _id: payment._id,
-          status: 'AUTHORIZED',
+          $or: [
+            { status: 'AUTHORIZED' },
+            {
+              status: 'PROCESSING',
+              processingAction: 'CAPTURE',
+              processingStartedAt: { $lt: leaseCutoff },
+            },
+          ],
         },
         {
           $set: {
@@ -286,6 +315,15 @@ router.post('/:orderId/authorize', async (req: Request, res: Response) => {
         });
       } catch (captureErr: any) {
         console.error('[Route: orders] Error capturing PayPal authorization:', captureErr?.message || captureErr);
+        // Restore AUTHORIZED state while preserving authorization & idempotency key for safe retry
+        try {
+          capturingPayment.status = 'AUTHORIZED';
+          capturingPayment.processingAction = null;
+          capturingPayment.processingStartedAt = null;
+          await capturingPayment.save();
+        } catch (revertErr) {
+          console.error('[Route: orders] Error restoring AUTHORIZED state after capture failure:', revertErr);
+        }
         return res.status(502).json({
           error: 'Payment capture failed or timed out with payment provider. Authorization is preserved.',
         });
@@ -295,26 +333,55 @@ router.post('/:orderId/authorize', async (req: Request, res: Response) => {
       const holdMinutes = parseInt(process.env.HOLD_MINUTES || '1440', 10);
       const expiresAt = new Date(Date.now() + holdMinutes * 60 * 1000);
 
-      payment.status = 'HELD';
-      payment.expiresAt = expiresAt;
-      payment.processingAction = null;
-      payment.processingStartedAt = null;
-      await payment.save();
+      // Atomically transition AUTHORIZED -> HELD so concurrent requests do not duplicate family alerts
+      const heldPayment = await Payment.findOneAndUpdate(
+        { _id: payment._id, status: 'AUTHORIZED' },
+        {
+          $set: {
+            status: 'HELD',
+            expiresAt,
+            processingAction: null,
+            processingStartedAt: null,
+          },
+        },
+        { new: true }
+      );
+
+      if (!heldPayment) {
+        const current = await Payment.findById(payment._id);
+        if (current?.status === 'HELD') {
+          return res.status(200).json({
+            status: 'HELD',
+            paymentId: current._id.toString(),
+            message: 'Paused for a second look. We asked your family to confirm.',
+          });
+        }
+        if (current?.status === 'CAPTURED') {
+          return res.status(200).json({
+            status: 'CAPTURED',
+            paymentId: current._id.toString(),
+            message: 'Payment sent successfully',
+          });
+        }
+        return res.status(409).json({
+          error: 'Payment state changed concurrently while placing hold.',
+        });
+      }
 
       // Dispatch alert to family
       notifyFamilyOfHold({
-        familyId: payment.familyId.toString(),
-        payeeLabel: payment.payeeLabel,
-        amount: payment.amount,
-        risk: payment.risk,
-        holdToken: payment.holdToken,
-        familySummary: payment.aiResult.familySummary,
+        familyId: heldPayment.familyId.toString(),
+        payeeLabel: heldPayment.payeeLabel,
+        amount: heldPayment.amount,
+        risk: heldPayment.risk,
+        holdToken: heldPayment.holdToken,
+        familySummary: heldPayment.aiResult.familySummary,
       }).catch((err) => console.error('[Orders] Notification dispatch error:', err));
 
       // Rule #7: Protect elder screen - NEVER return holdToken here
       return res.status(200).json({
         status: 'HELD',
-        paymentId: payment._id.toString(),
+        paymentId: heldPayment._id.toString(),
         message: 'Paused for a second look. We asked your family to confirm.',
       });
     }

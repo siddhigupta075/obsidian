@@ -3,72 +3,62 @@ import PaymentForm from '../components/PaymentForm'
 
 export default function ElderPaymentView() {
   return (
-    <div className="min-h-screen bg-[#F7FAF9] text-[#063B3B] flex flex-col font-sans selection:bg-[#DDF7F0] selection:text-[#063B3B]">
-      {/* ── Navigation Bar ── */}
+    <div className="min-h-screen bg-paper text-ink flex flex-col font-sans">
+      {/* ── Header ── */}
       <Navbar />
 
       {/* ── Main Content Area ── */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12 lg:py-16">
-        <div className="w-full max-w-xl space-y-8">
-          {/* Header & Reassuring Messaging */}
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#009F91]/20 bg-[#DDF7F0]/80 px-3.5 py-1 text-xs font-bold text-[#063B3B] shadow-2xs">
-              <span className="flex h-1.5 w-1.5 rounded-full bg-[#009F91]" />
-              AI-POWERED PRE-CAPTURE PROTECTION
+      <main className="flex-1 w-full">
+        <div className="mx-auto max-w-6xl w-full px-6 py-6 lg:px-12 lg:py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+            {/* Left column: context & plain steps (stacks below form on mobile) */}
+            <div className="lg:col-span-5 order-2 lg:order-1">
+              <h1 className="font-serif font-semibold text-[2.25rem] leading-[1.15] tracking-[-0.01em] text-ink">
+                Send a payment
+              </h1>
+
+              <p className="mt-4 text-[1.125rem] leading-[1.55] text-ink-2">
+                Before any money leaves your account, SecondSight takes a quick look. Nothing is
+                charged until it&apos;s checked.
+              </p>
+
+              <div className="mt-8 pt-6 border-t border-line">
+                <h2 className="font-serif font-semibold text-[1.25rem] leading-[1.3] tracking-[-0.01em] text-ink">
+                  What happens next
+                </h2>
+                <ol className="mt-4 space-y-3 text-[1.125rem] leading-[1.55] text-ink-2">
+                  <li className="flex items-start gap-3">
+                    <span className="font-semibold text-ink tabular-nums shrink-0">1.</span>
+                    <span>Enter who you&apos;re paying, the amount, and what it&apos;s for.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="font-semibold text-ink tabular-nums shrink-0">2.</span>
+                    <span>SecondSight checks the details before any funds move.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="font-semibold text-ink tabular-nums shrink-0">3.</span>
+                    <span>
+                      If it looks unusual or is over $100, Sarah is asked to confirm first.
+                    </span>
+                  </li>
+                </ol>
+              </div>
             </div>
 
-            <h1 className="font-sans text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight text-[#063B3B] leading-tight">
-              Every payment deserves a second look.
-            </h1>
-
-            <p className="text-base sm:text-lg text-slate-600 max-w-lg mx-auto leading-relaxed">
-              SecondSight quietly analyzes recipient risk, coercion signals, and pressure tactics—keeping
-              your money safe before any funds leave your account.
-            </p>
-          </div>
-
-          {/* Payment Card Container */}
-          <div className="relative rounded-3xl border border-[#009F91]/15 bg-white p-6 sm:p-9 shadow-[0_8px_30px_rgb(6,59,59,0.05)] transition-all">
-            {/* Subtle top brand accent line */}
-            <div className="absolute inset-x-0 top-0 h-1.5 rounded-t-3xl bg-gradient-to-r from-[#009F91] via-[#063B3B] to-[#009F91]" />
-
-            <PaymentForm />
-          </div>
-
-          {/* Reassuring note for elders & families */}
-          <div className="flex items-center justify-center gap-2 text-xs font-medium text-slate-500">
-            <svg
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="h-4 w-4 text-[#009F91]"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 1a9 9 0 100 18 9 9 0 000-18zm3.707 7.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span>Payments remain held in authorization state until verified safe.</span>
+            {/* Right column: form card (first on mobile) */}
+            <div className="lg:col-span-7 order-1 lg:order-2 flex lg:justify-end">
+              <div className="w-full max-w-[560px] rounded-card border border-line bg-surface p-5 sm:p-8 shadow-card">
+                <PaymentForm />
+              </div>
+            </div>
           </div>
         </div>
       </main>
 
       {/* ── Footer ── */}
-      <footer className="w-full border-t border-[#009F91]/10 bg-white/70 py-6 text-center text-xs text-slate-500">
-        <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-[#063B3B]">SecondSight</span>
-            <span className="text-slate-300">·</span>
-            <span>Pause the payment. Not the person.</span>
-          </div>
-          <div className="flex items-center gap-4 text-[11px] text-slate-400">
-            <span>PayPal Authorize Protocol</span>
-            <span>•</span>
-            <span>Zero-Liability Hold</span>
-            <span>•</span>
-            <span className="font-semibold text-[#009F91]">Sandbox Demo Mode</span>
-          </div>
+      <footer className="w-full border-t border-line bg-paper pb-20 sm:pb-6">
+        <div className="mx-auto max-w-6xl w-full px-6 py-5 lg:px-12 text-[0.875rem] leading-normal text-ink-2">
+          SecondSight · PayPal sandbox · Demo mode
         </div>
       </footer>
     </div>

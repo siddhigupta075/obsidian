@@ -1,4 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import {
+  AlertCircleIcon,
+  AlertTriangleIcon,
+  BrandMark,
+  CheckCircleIcon,
+  ClockIcon,
+  ShieldAlertIcon,
+  ShieldCheckIcon,
+} from '../components/Icons'
 
 interface HoldItem {
   token: string
@@ -23,6 +32,27 @@ interface DemoIdentity {
   familyLink: { amountLimit: number }
 }
 
+function formatCurrency(value: number): string {
+  const hasCents = value % 1 !== 0
+  return `$${value.toLocaleString('en-US', {
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: 2,
+  })}`
+}
+
+function formatRelativeTime(iso?: string): string | null {
+  if (!iso) return null
+  const createdMs = new Date(iso).getTime()
+  if (Number.isNaN(createdMs)) return null
+  const diffSec = Math.max(0, Math.floor((Date.now() - createdMs) / 1000))
+  if (diffSec < 60) return 'just now'
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return `${diffMin} min ago`
+  const diffHours = Math.floor(diffMin / 60)
+  if (diffHours < 24) return `${diffHours} hr ago`
+  return new Date(iso).toLocaleDateString()
+}
+
 export default function FamilyDashboardView() {
   const [identity, setIdentity] = useState<DemoIdentity | null>(null)
   const [holds, setHolds] = useState<HoldItem[]>([])
@@ -30,6 +60,8 @@ export default function FamilyDashboardView() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending')
+  const pendingTabRef = useRef<HTMLButtonElement>(null)
+  const historyTabRef = useRef<HTMLButtonElement>(null)
 
   // 1. Fetch demo identities
   useEffect(() => {
@@ -98,8 +130,8 @@ export default function FamilyDashboardView() {
         type: 'success',
         message:
           decision === 'decline'
-            ? '✅ Payment was DECLINED. PayPal authorization voided immediately; funds never left the account!'
-            : '✅ Payment was APPROVED. PayPal capture completed.',
+            ? 'Payment declined. The PayPal authorization was cancelled and no money left the account.'
+            : 'Payment approved. PayPal capture completed.',
       })
 
       // Refresh list immediately
@@ -127,279 +159,378 @@ export default function FamilyDashboardView() {
     .filter((h) => h.status === 'VOIDED')
     .reduce((sum, h) => sum + h.amount, 0)
 
+  const thresholdLimit = identity?.familyLink?.amountLimit || 100
+  const familyName = identity?.family?.name || 'Sarah Davis'
+  const elderFirstName = (identity?.elder?.name || 'Margaret Davis').split(' ')[0]
+
   return (
-    <div className="min-h-screen bg-[#F7FAF9] text-[#063B3B] flex flex-col font-sans">
-      {/* ── Sub-header Banner ── */}
-      <section className="bg-gradient-to-r from-[#063B3B] to-[#009F91] text-white py-8 px-4 sm:px-6 lg:px-8 shadow-sm">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-0.5 text-xs font-semibold backdrop-blur-xs mb-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              LIVE GUARDIAN SYNC ACTIVE
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Family Protection Dashboard
-            </h1>
-            <p className="text-white/80 text-sm mt-1">
-              Signed in as <strong className="text-white">{identity?.family?.name || 'Sarah Davis'}</strong> · Protecting{' '}
-              <strong className="text-white">{identity?.elder?.name || 'Margaret Davis'}</strong> (Threshold: ${identity?.familyLink?.amountLimit || 100})
-            </p>
+    <div className="min-h-screen bg-paper text-ink flex flex-col font-sans">
+      {/* ── Flat Paper Header ── */}
+      <header className="w-full border-b border-line bg-paper">
+        <div className="mx-auto max-w-5xl w-full px-6 py-6 lg:px-12 lg:py-10">
+          <div className="flex items-center gap-2.5 text-ink mb-6">
+            <BrandMark className="text-ink shrink-0" />
+            <span className="font-serif text-[1.25rem] font-semibold tracking-[-0.01em] text-ink">
+              SecondSight
+            </span>
           </div>
 
-          <div className="flex gap-4">
-            <div className="bg-white/10 rounded-2xl p-4 border border-white/15 backdrop-blur-xs text-center min-w-[130px]">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-white/70 block">
-                Pending Holds
-              </span>
-              <span className="text-2xl font-black text-white">{pendingHolds.length}</span>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h1 className="font-serif font-semibold text-[2rem] leading-[1.15] tracking-[-0.01em] text-ink">
+                {elderFirstName}&apos;s payments
+              </h1>
+              <p className="mt-2 max-w-2xl text-[1rem] leading-[1.5] text-ink-2">
+                Signed in as {familyName}. Anything over{' '}
+                <span className="tabular-nums">${thresholdLimit}</span>, or that looks risky,
+                waits here for your OK.
+              </p>
             </div>
-            <div className="bg-white/10 rounded-2xl p-4 border border-white/15 backdrop-blur-xs text-center min-w-[150px]">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-white/70 block">
-                Funds Protected
-              </span>
-              <span className="text-2xl font-black text-emerald-300">${totalProtected}</span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ── Feedback Notification ── */}
-      {feedback && (
-        <div className="max-w-7xl mx-auto px-4 mt-6 w-full">
-          <div
-            className={`rounded-2xl p-4 text-sm font-semibold border flex items-center justify-between ${
-              feedback.type === 'success'
-                ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                : 'bg-rose-50 border-rose-300 text-rose-900'
-            }`}
-          >
-            <span>{feedback.message}</span>
-            <button
-              onClick={() => setFeedback(null)}
-              className="text-xs underline text-slate-500 hover:text-slate-800"
-            >
-              Dismiss
-            </button>
+            <dl className="flex items-stretch divide-x divide-line shrink-0">
+              <div className="pr-6">
+                <dt className="text-[0.875rem] text-ink-2">On hold</dt>
+                <dd className="mt-1 font-serif text-[1.5rem] font-semibold leading-none text-ink tabular-nums">
+                  {pendingHolds.length}
+                </dd>
+              </div>
+              <div className="pl-6">
+                <dt className="text-[0.875rem] text-ink-2">Protected</dt>
+                <dd className="mt-1 font-serif text-[1.5rem] font-semibold leading-none text-ink tabular-nums">
+                  {formatCurrency(totalProtected)}
+                </dd>
+              </div>
+            </dl>
           </div>
         </div>
-      )}
+      </header>
 
       {/* ── Main Content Area ── */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-200 gap-4 text-sm font-bold">
-          <button
-            onClick={() => setActiveTab('pending')}
-            className={`pb-3 px-1 border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
-              activeTab === 'pending'
-                ? 'border-[#009F91] text-[#063B3B]'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <span>Pending Approvals</span>
-            {pendingHolds.length > 0 && (
-              <span className="bg-amber-500 text-white rounded-full px-2 py-0.5 text-xs font-bold animate-pulse">
-                {pendingHolds.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`pb-3 px-1 border-b-2 transition-all cursor-pointer ${
-              activeTab === 'history'
-                ? 'border-[#009F91] text-[#063B3B]'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            Decision History ({historicalHolds.length})
-          </button>
-        </div>
-
-        {/* ── TAB: PENDING REVIEWS ── */}
-        {activeTab === 'pending' && (
-          <div className="space-y-6">
-            {loading ? (
-              <div className="text-center py-12 text-slate-400 text-sm flex flex-col items-center gap-2">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#009F91] border-t-transparent" />
-                <span>Checking for live transaction holds...</span>
+      <main className="flex-1 w-full">
+        <div className="mx-auto max-w-5xl w-full px-6 py-6 lg:px-12 lg:py-10 space-y-8">
+          {/* Feedback Notification */}
+          {feedback && (
+            <div
+              role={feedback.type === 'error' ? 'alert' : 'status'}
+              aria-live="polite"
+              className={`rounded-control border p-4 flex flex-wrap items-center justify-between gap-3 text-[1rem] leading-[1.5] ${
+                feedback.type === 'success'
+                  ? 'border-line bg-safe-tint text-ink'
+                  : 'border-danger bg-danger-tint text-ink'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                {feedback.type === 'success' ? (
+                  <CheckCircleIcon className="text-safe mt-0.5" />
+                ) : (
+                  <AlertCircleIcon className="text-danger mt-0.5" />
+                )}
+                <span>{feedback.message}</span>
               </div>
-            ) : pendingHolds.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-3xl border border-slate-200/80 p-8 shadow-2xs">
-                <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-[#DDF7F0] text-[#009F91] mb-4">
-                  <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-extrabold text-[#063B3B]">All Clear! No Pending Holds</h3>
-                <p className="text-slate-500 text-sm max-w-md mx-auto mt-2">
-                  When Margaret attempts a transaction that triggers AI risk flags or exceeds ${identity?.familyLink?.amountLimit || 100}, it will appear here in real time before money moves.
-                </p>
-                <div className="mt-4 inline-flex items-center gap-2 text-xs text-slate-400">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                  <span>Polling PayPal authorize state live every 3 seconds</span>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-6">
-                {pendingHolds.map((hold) => (
-                  <div
-                    key={hold.token}
-                    className="rounded-3xl border-2 border-amber-300 bg-white p-6 sm:p-8 shadow-md relative overflow-hidden"
-                  >
-                    {/* Urgency Stripe */}
-                    <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-amber-400 via-rose-500 to-amber-400" />
+              <button
+                type="button"
+                onClick={() => setFeedback(null)}
+                className="min-h-[48px] px-2 text-[0.9375rem] font-semibold text-brand hover:text-brand-hover underline underline-offset-4 cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
-                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-100 pb-5">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-black text-rose-800 tracking-wide">
-                            {hold.risk} RISK ALERT
+          {/* Navigation Tabs */}
+          <div
+            role="tablist"
+            aria-label="Margaret's payment views"
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'Home' || e.key === 'End') {
+                e.preventDefault()
+                const nextTab =
+                  e.key === 'Home'
+                    ? 'pending'
+                    : e.key === 'End'
+                    ? 'history'
+                    : activeTab === 'pending'
+                    ? 'history'
+                    : 'pending'
+                setActiveTab(nextTab)
+                if (nextTab === 'pending') {
+                  pendingTabRef.current?.focus()
+                } else {
+                  historyTabRef.current?.focus()
+                }
+              }
+            }}
+            className="flex border-b border-line gap-6"
+          >
+            <button
+              ref={pendingTabRef}
+              id="tab-pending"
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'pending'}
+              tabIndex={activeTab === 'pending' ? 0 : -1}
+              onClick={() => setActiveTab('pending')}
+              className={`min-h-[48px] -mb-px border-b-2 px-1 py-2 text-[1rem] inline-flex items-center gap-2 ui-transition cursor-pointer ${
+                activeTab === 'pending'
+                  ? 'border-brand text-ink font-semibold'
+                  : 'border-transparent text-ink-2 hover:text-ink font-medium'
+              }`}
+            >
+              <span>Pending</span>
+              <span className="tabular-nums text-ink-2">({pendingHolds.length})</span>
+            </button>
+
+            <button
+              ref={historyTabRef}
+              id="tab-history"
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'history'}
+              tabIndex={activeTab === 'history' ? 0 : -1}
+              onClick={() => setActiveTab('history')}
+              className={`min-h-[48px] -mb-px border-b-2 px-1 py-2 text-[1rem] inline-flex items-center gap-2 ui-transition cursor-pointer ${
+                activeTab === 'history'
+                  ? 'border-brand text-ink font-semibold'
+                  : 'border-transparent text-ink-2 hover:text-ink font-medium'
+              }`}
+            >
+              <span>History</span>
+              <span className="tabular-nums text-ink-2">({historicalHolds.length})</span>
+            </button>
+          </div>
+
+          {/* ── TAB: PENDING REVIEWS ── */}
+          {activeTab === 'pending' && (
+            <div role="tabpanel" aria-labelledby="tab-pending" className="space-y-6">
+              {loading ? (
+                <div
+                  role="status"
+                  className="rounded-card border border-line bg-surface p-6 sm:p-8 shadow-card text-[1rem] text-ink-2"
+                >
+                  Checking for pending payments…
+                </div>
+              ) : pendingHolds.length === 0 ? (
+                <div className="rounded-card border border-line bg-surface p-6 sm:p-8 shadow-card text-left">
+                  <h2 className="font-serif font-semibold text-[1.375rem] leading-[1.25] tracking-[-0.01em] text-ink">
+                    Nothing waiting for you.
+                  </h2>
+                  <p className="mt-2 max-w-xl text-[1rem] leading-[1.5] text-ink-2">
+                    When {elderFirstName} sends something over{' '}
+                    <span className="tabular-nums">${thresholdLimit}</span>, or something that
+                    looks risky, it will show up here.
+                  </p>
+                  <p className="mt-4 inline-flex items-center gap-2 text-[0.875rem] text-ink-3">
+                    <span aria-hidden="true" className="h-2 w-2 rounded-full bg-safe shrink-0" />
+                    <span>Checked 3 seconds ago</span>
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6">
+                  {pendingHolds.map((hold) => {
+                    const relTime = formatRelativeTime(hold.createdAt)
+                    const isBusy = actionLoading === hold.token
+
+                    return (
+                      <article
+                        key={hold.token}
+                        className="rounded-card border border-line bg-surface p-5 sm:p-8 shadow-card"
+                      >
+                        {/* Top status & risk tags */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 rounded-tag border border-hold-border bg-hold-tint px-2.5 py-1 text-[0.875rem] font-semibold text-hold">
+                            <ClockIcon />
+                            <span>{relTime ? `On hold · ${relTime}` : 'On hold'}</span>
                           </span>
-                          <span className="text-xs text-slate-400 font-mono">
-                            Hold ID: {hold.token.substring(0, 8)}...
-                          </span>
+
+                          {hold.risk === 'HIGH' && (
+                            <span className="inline-flex items-center gap-1.5 rounded-tag bg-danger-tint px-2.5 py-1 text-[0.875rem] font-semibold text-danger">
+                              <ShieldAlertIcon />
+                              <span>Higher risk</span>
+                            </span>
+                          )}
+
+                          {hold.risk === 'MEDIUM' && (
+                            <span className="inline-flex items-center gap-1.5 rounded-tag border border-hold-border bg-hold-tint px-2.5 py-1 text-[0.875rem] font-semibold text-hold">
+                              <AlertTriangleIcon />
+                              <span>Moderate risk</span>
+                            </span>
+                          )}
+
+                          {hold.risk === 'LOW' && (
+                            <span className="inline-flex items-center gap-1.5 rounded-tag bg-safe-tint px-2.5 py-1 text-[0.875rem] font-semibold text-safe">
+                              <CheckCircleIcon />
+                              <span>Lower risk</span>
+                            </span>
+                          )}
                         </div>
-                        <h2 className="text-2xl font-black text-[#063B3B]">
-                          ${hold.amount} to {hold.payeeLabel}
-                        </h2>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          Requested reason: <em className="text-slate-700">"{hold.message}"</em>
-                        </p>
-                      </div>
 
-                      {/* Action Decision Buttons */}
-                      <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                        <button
-                          type="button"
-                          disabled={actionLoading === hold.token}
-                          onClick={() => handleDecision(hold.token, 'decline')}
-                          className="py-3 px-6 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                          <span>Decline & Void Payment</span>
-                        </button>
+                        {/* Recipient beside Amount */}
+                        <div className="mt-4 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 pb-5 border-b border-line">
+                          <h2 className="font-serif font-semibold text-[1.5rem] leading-[1.25] tracking-[-0.01em] text-ink break-words">
+                            {hold.payeeLabel}
+                          </h2>
+                          <p className="font-serif font-semibold text-[2.25rem] leading-[1.15] tracking-[-0.01em] text-ink tabular-nums shrink-0">
+                            {formatCurrency(hold.amount)}
+                          </p>
+                        </div>
 
-                        <button
-                          type="button"
-                          disabled={actionLoading === hold.token}
-                          onClick={() => handleDecision(hold.token, 'approve')}
-                          className="py-3 px-6 rounded-xl bg-[#009F91] hover:bg-[#00877A] text-white font-bold text-sm shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span>Approve & Transfer</span>
-                        </button>
-                      </div>
-                    </div>
+                        {/* Elder's stated reason */}
+                        <div className="mt-5">
+                          <p className="text-[0.875rem] font-semibold text-ink-2">
+                            {elderFirstName} said it&apos;s for:
+                          </p>
+                          <blockquote className="mt-2 rounded-control border border-line bg-paper p-4 text-[1rem] leading-[1.5] text-ink">
+                            “{hold.message || 'No reason entered'}”
+                          </blockquote>
+                        </div>
 
-                    {/* AI Explanation Box */}
-                    <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="rounded-2xl bg-amber-50/70 border border-amber-200 p-4">
-                        <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                          <span>🤖</span> AI Scam Context Summary
-                        </h4>
-                        <p className="text-xs text-amber-950 font-medium leading-relaxed">
-                          {hold.familySummary || 'The AI model flagged high urgency, coercive language, or non-standard gift card/wire payment demands.'}
-                        </p>
-                      </div>
+                        {/* What stood out */}
+                        {(hold.familySummary || (hold.reasons && hold.reasons.length > 0)) && (
+                          <div className="mt-6">
+                            <h3 className="font-sans text-[0.875rem] font-semibold tracking-normal text-ink-2">
+                              What stood out
+                            </h3>
 
-                      <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
-                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Detected Risk Flags
-                        </h4>
-                        <ul className="text-xs text-slate-600 space-y-1">
-                          {hold.reasons.map((r, i) => (
-                            <li key={i} className="flex items-start gap-1.5">
-                              <span className="text-rose-600 font-bold">•</span>
-                              <span>{r}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
+                            {hold.familySummary && (
+                              <p className="mt-2 text-[1rem] leading-[1.5] text-ink">
+                                {hold.familySummary}
+                              </p>
+                            )}
 
-                    <div className="mt-4 flex items-center justify-between text-[11px] text-slate-400 pt-3 border-t border-slate-100">
-                      <span>Zero-Liability Hold · PayPal Authorization ID: {hold.paymentId.substring(0, 12)}</span>
-                      <span>Auto-expires if unreviewed: {hold.expiresAt ? new Date(hold.expiresAt).toLocaleTimeString() : 'N/A'}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                            {hold.reasons && hold.reasons.length > 0 && (
+                              <ul className="mt-3 space-y-2 text-[1rem] leading-[1.5] text-ink-2">
+                                {hold.reasons.slice(0, 4).map((reason, idx) => (
+                                  <li key={idx} className="flex items-start gap-2.5">
+                                    <span aria-hidden="true" className="text-ink-2">
+                                      •
+                                    </span>
+                                    <span>{reason}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
 
-        {/* ── TAB: DECISION HISTORY ── */}
-        {activeTab === 'history' && (
-          <div className="rounded-3xl bg-white border border-slate-200 overflow-hidden shadow-2xs">
-            {historicalHolds.length === 0 ? (
-              <div className="p-12 text-center text-slate-400 text-sm">
-                No past transactions recorded yet.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-600">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
-                    <tr>
-                      <th className="py-3 px-4">Recipient</th>
-                      <th className="py-3 px-4">Amount</th>
-                      <th className="py-3 px-4">Risk Level</th>
-                      <th className="py-3 px-4">Outcome</th>
-                      <th className="py-3 px-4">Decision Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {historicalHolds.map((h) => (
-                      <tr key={h.token} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3.5 px-4 font-bold text-slate-800">{h.payeeLabel}</td>
-                        <td className="py-3.5 px-4 font-mono font-semibold text-slate-900">${h.amount}</td>
-                        <td className="py-3.5 px-4">
-                          <span
-                            className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-                              h.risk === 'HIGH'
-                                ? 'bg-rose-100 text-rose-800'
-                                : h.risk === 'MEDIUM'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-[#DDF7F0] text-[#063B3B]'
-                            }`}
+                        {/* Actions: Approve primary above Decline destructive on mobile */}
+                        <div className="mt-6 pt-5 border-t border-line flex flex-col sm:flex-row gap-3">
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => handleDecision(hold.token, 'approve')}
+                            className="min-h-[52px] px-6 py-3 rounded-control bg-brand hover:bg-brand-hover text-white text-[1.125rem] font-semibold ui-transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {h.risk}
+                            Approve payment
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => handleDecision(hold.token, 'decline')}
+                            className="min-h-[52px] px-6 py-3 rounded-control border-[1.5px] border-danger bg-surface text-danger hover:bg-danger-tint text-[1.125rem] font-semibold ui-transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Decline payment
+                          </button>
+                        </div>
+
+                        {/* Quiet metadata */}
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[0.875rem] text-ink-3">
+                          <span>Authorization {hold.paymentId.substring(0, 12)}</span>
+                          {hold.expiresAt && (
+                            <span className="tabular-nums">
+                              Expires{' '}
+                              {new Date(hold.expiresAt).toLocaleTimeString([], {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── TAB: DECISION HISTORY ── */}
+          {activeTab === 'history' && (
+            <div role="tabpanel" aria-labelledby="tab-history">
+              {historicalHolds.length === 0 ? (
+                <div className="rounded-card border border-line bg-surface p-6 sm:p-8 shadow-card text-[1rem] leading-[1.5] text-ink-2">
+                  Nothing decided yet. Approved and declined payments will be listed here.
+                </div>
+              ) : (
+                <ul className="divide-y divide-line rounded-card border border-line bg-surface shadow-card">
+                  {historicalHolds.map((h) => {
+                    const dateStr = h.decidedAt
+                      ? new Date(h.decidedAt).toLocaleDateString()
+                      : h.createdAt
+                      ? new Date(h.createdAt).toLocaleDateString()
+                      : '—'
+
+                    return (
+                      <li
+                        key={h.token}
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:px-6 sm:py-4"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-[0.875rem] text-ink-3 tabular-nums">{dateStr}</p>
+                          <p className="mt-0.5 text-[1rem] font-semibold text-ink break-words">
+                            {h.payeeLabel}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-4 shrink-0">
+                          <span className="font-serif font-semibold text-[1.25rem] text-ink tabular-nums">
+                            {formatCurrency(h.amount)}
                           </span>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          {h.status === 'VOIDED' && (
-                            <span className="text-emerald-700 font-bold flex items-center gap-1">
-                              🛡️ DECLINED / VOIDED (Funds Safe)
-                            </span>
-                          )}
+
                           {h.status === 'CAPTURED' && (
-                            <span className="text-[#009F91] font-bold flex items-center gap-1">
-                              ✓ APPROVED / CAPTURED
+                            <span className="inline-flex items-center gap-1.5 rounded-tag bg-safe-tint px-2.5 py-1 text-[0.875rem] font-semibold text-safe">
+                              <CheckCircleIcon />
+                              <span>Approved</span>
                             </span>
                           )}
-                          {h.status === 'PROCESSING' && (
-                            <span className="text-slate-500 font-medium">Processing...</span>
+
+                          {h.status === 'VOIDED' && h.decision === 'EXPIRED' && (
+                            <span className="inline-flex items-center gap-1.5 rounded-tag border border-line bg-paper px-2.5 py-1 text-[0.875rem] font-semibold text-ink-2">
+                              <ClockIcon />
+                              <span>Expired</span>
+                            </span>
                           )}
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-400">
-                          {h.decidedAt
-                            ? new Date(h.decidedAt).toLocaleDateString()
-                            : h.createdAt
-                            ? new Date(h.createdAt).toLocaleDateString()
-                            : '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
+
+                          {h.status === 'VOIDED' && h.decision !== 'EXPIRED' && (
+                            <span className="inline-flex items-center gap-1.5 rounded-tag border border-line bg-paper px-2.5 py-1 text-[0.875rem] font-semibold text-ink">
+                              <ShieldCheckIcon />
+                              <span>Declined</span>
+                            </span>
+                          )}
+
+                          {h.status === 'PROCESSING' && (
+                            <span className="inline-flex items-center gap-1.5 rounded-tag border border-hold-border bg-hold-tint px-2.5 py-1 text-[0.875rem] font-semibold text-hold">
+                              <ClockIcon />
+                              <span>Processing</span>
+                            </span>
+                          )}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
       </main>
+
+      {/* ── Footer ── */}
+      <footer className="w-full border-t border-line bg-paper pb-20 sm:pb-6">
+        <div className="mx-auto max-w-5xl w-full px-6 py-5 lg:px-12 text-[0.875rem] leading-normal text-ink-2">
+          SecondSight · Live from PayPal sandbox · Demo mode
+        </div>
+      </footer>
     </div>
   )
 }

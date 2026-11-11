@@ -46,7 +46,6 @@ if (distPath) {
       name: 'Second Sight API',
       tagline: 'Pause the payment. Not the person.',
       status: 'online',
-      docs: '/api-docs',
       health: '/health',
     });
   });
