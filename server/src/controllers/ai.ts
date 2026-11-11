@@ -72,23 +72,44 @@ export function getFailSafeResult(): AiEvaluationResult {
       questionForElder: 'Did someone ask you to send this money right now?',
       familySummary:
         'Automated AI evaluation timed out or was temporarily unavailable. Paused as a safety precaution for family verification.',
+      source: 'fallback',
     },
     aiFailed: true,
   };
 }
 
 async function callGemini(apiKey: string, prompt: string, signal: AbortSignal): Promise<string> {
-  const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+  const models = [
+    'gemini-3-flash-preview',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite-preview',
+    'gemini-3.6-flash',
+  ];
+  const PER_MODEL_TIMEOUT_MS = 4000;
   let lastError: Error | null = null;
 
   for (const model of models) {
     if (signal.aborted) break;
+
+    const attemptController = new AbortController();
+    const onParentAbort = () => attemptController.abort();
+    signal.addEventListener('abort', onParentAbort, { once: true });
+    const attemptTimer = setTimeout(() => attemptController.abort(), PER_MODEL_TIMEOUT_MS);
+
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const generationConfig: Record<string, any> = {
+        responseMimeType: 'application/json',
+        temperature: 0.1,
+      };
+      if (model.startsWith('gemini-3')) {
+        generationConfig.thinkingConfig = { thinkingLevel: 'MINIMAL' };
+      }
+
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal,
+        signal: attemptController.signal,
         body: JSON.stringify({
           contents: [
             {
@@ -96,10 +117,7 @@ async function callGemini(apiKey: string, prompt: string, signal: AbortSignal): 
               parts: [{ text: `${SYSTEM_PROMPT}\n\nTransaction to evaluate:\n${prompt}` }],
             },
           ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.1,
-          },
+          generationConfig,
         }),
       });
 
@@ -114,9 +132,16 @@ async function callGemini(apiKey: string, prompt: string, signal: AbortSignal): 
       if (rawText) {
         return rawText;
       }
+      lastError = new Error(`Gemini API (${model}) returned empty content`);
     } catch (err: any) {
-      if (err.name === 'AbortError') throw err;
-      lastError = err;
+      if (signal.aborted) throw err;
+      lastError =
+        err?.name === 'AbortError'
+          ? new Error(`Gemini API (${model}) timed out after ${PER_MODEL_TIMEOUT_MS}ms`)
+          : err;
+    } finally {
+      clearTimeout(attemptTimer);
+      signal.removeEventListener('abort', onParentAbort);
     }
   }
 
@@ -133,7 +158,7 @@ async function callXAi(apiKey: string, prompt: string, signal: AbortSignal): Pro
     },
     signal,
     body: JSON.stringify({
-      model: 'grok-beta',
+      model: process.env.XAI_MODEL || 'grok-2-latest',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt },
@@ -185,72 +210,134 @@ async function callPythonRiskEngine(
   return await response.json();
 }
 
+const PythonRiskEngineSchema = z
+  .object({
+    risk_level: z.string().optional(),
+    risk: z.string().optional(),
+    tactics: z.array(z.string()).optional(),
+    explanation: z.string().optional(),
+    scamType: z.string().optional(),
+    calm_question: z.string().optional(),
+    questionForElder: z.string().optional(),
+    family_summary: z.string().optional(),
+    familySummary: z.string().optional(),
+    risk_score: z.number().optional(),
+    source: z.string().optional(),
+  })
+  .refine((data) => Boolean(data.risk_level || data.risk), {
+    message: 'Python risk engine response missing risk_level/risk',
+  });
+
 export async function evaluateAiScam(input: AiEvaluationInput): Promise<AiEvaluationResult> {
-  const riskEngineUrl = process.env.RISK_ENGINE_URL || 'http://localhost:8001';
+  const riskEngineUrl = process.env.RISK_ENGINE_URL?.trim();
+  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  const xaiKey = process.env.XAI_API_KEY?.trim();
 
-  // 1. Primary path: Call the Python Risk Engine service with 15s timeout
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const hasGeminiKey = Boolean(geminiKey && geminiKey !== 'your_gemini_api_key_here');
+  const hasXaiKey = Boolean(xaiKey && xaiKey !== 'your_xai_api_key_here');
+  const hasDirectLlmKey = hasGeminiKey || hasXaiKey;
 
-    const pyData = await callPythonRiskEngine(riskEngineUrl, input, controller.signal);
-    clearTimeout(timeoutId);
+  // 1. Primary path: Call the Python Risk Engine only when RISK_ENGINE_URL is configured.
+  // Keep timeout short when a direct LLM key is available so sleeping free-tier cold starts
+  // do not exhaust the client timeout budget before Gemini/xAI runs.
+  if (riskEngineUrl) {
+    const pyTimeoutMs = hasDirectLlmKey ? 4000 : 9000;
+    const pyController = new AbortController();
+    const pyTimeoutId = setTimeout(() => pyController.abort(), pyTimeoutMs);
 
-    const riskLevelStr = (pyData.risk_level || pyData.risk || 'medium').toLowerCase();
-    const riskLevel: PaymentRisk =
-      riskLevelStr === 'high' ? 'HIGH' : riskLevelStr === 'medium' ? 'MEDIUM' : 'LOW';
+    try {
+      const rawPyData = await callPythonRiskEngine(riskEngineUrl, input, pyController.signal);
+      clearTimeout(pyTimeoutId);
 
-    const reasons: string[] =
-      Array.isArray(pyData.tactics) && pyData.tactics.length > 0
-        ? pyData.tactics
-        : pyData.explanation
-        ? [pyData.explanation]
-        : ['Automated risk assessment performed'];
+      const pyData = PythonRiskEngineSchema.parse(rawPyData);
+      const source = pyData.source || 'fallback';
+      const isFallbackSource = source === 'fallback';
 
-    return {
-      aiResult: {
-        risk: riskLevel,
-        scamType: (pyData.tactics && pyData.tactics[0]) || pyData.scamType || 'other',
-        reasons,
-        questionForElder: pyData.calm_question || pyData.questionForElder || '',
-        familySummary: pyData.family_summary || pyData.familySummary || '',
-        riskScore: typeof pyData.risk_score === 'number' ? pyData.risk_score : undefined,
-        tactics: Array.isArray(pyData.tactics) ? pyData.tactics : [],
-        explanation: pyData.explanation || '',
-        source: pyData.source || 'fallback',
-      },
-      aiFailed: pyData.source === 'fallback',
-    };
-  } catch (pyErr: any) {
-    console.warn(
-      `[AI] Python risk engine at ${riskEngineUrl} unavailable or timed out: ${
-        pyErr?.message || pyErr
-      }. Proceeding to fallback.`
-    );
+      if (isFallbackSource && hasDirectLlmKey) {
+        console.warn(
+          '[AI] Python risk engine returned rule-based fallback; escalating to direct Node LLM evaluation.'
+        );
+      } else {
+        const riskLevelStr = (pyData.risk_level || pyData.risk || 'medium').toLowerCase();
+        let riskLevel: PaymentRisk =
+          riskLevelStr === 'high' ? 'HIGH' : riskLevelStr === 'medium' ? 'MEDIUM' : 'LOW';
+
+        // Hard Rule #3: Fail-safe default — never fail open with LOW risk if AI fell back to rules
+        if (isFallbackSource && riskLevel === 'LOW') {
+          riskLevel = 'MEDIUM';
+        }
+
+        const reasons: string[] =
+          Array.isArray(pyData.tactics) && pyData.tactics.length > 0
+            ? pyData.tactics
+            : pyData.explanation
+            ? [pyData.explanation]
+            : ['Automated risk assessment performed'];
+
+        return {
+          aiResult: {
+            risk: riskLevel,
+            scamType: (pyData.tactics && pyData.tactics[0]) || pyData.scamType || 'other',
+            reasons,
+            questionForElder:
+              pyData.calm_question ||
+              pyData.questionForElder ||
+              'Did someone ask you to send this money right now?',
+            familySummary: pyData.family_summary || pyData.familySummary || '',
+            riskScore: typeof pyData.risk_score === 'number' ? pyData.risk_score : undefined,
+            tactics: Array.isArray(pyData.tactics) ? pyData.tactics : [],
+            explanation: pyData.explanation || '',
+            source,
+          },
+          aiFailed: isFallbackSource,
+        };
+      }
+    } catch (pyErr: any) {
+      clearTimeout(pyTimeoutId);
+      console.warn(
+        `[AI] Python risk engine at ${riskEngineUrl} unavailable or timed out: ${
+          pyErr?.message || pyErr
+        }. Proceeding to fallback.`
+      );
+    }
   }
 
-  // 2. Secondary path: Direct LLM or fail-safe default if Python service is down
-  const geminiKey = process.env.GEMINI_API_KEY;
-  const xaiKey = process.env.XAI_API_KEY;
-
+  // 2. Secondary path: Direct LLM or fail-safe default
   const prompt = JSON.stringify({
     amount: input.amount,
     payee: input.payeeLabel,
     message: input.message || '',
   });
 
-  // 6500ms timeout for LLM call with multi-model fallback
+  // 9500ms timeout for LLM call with multi-model fallback
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6500);
+  const timeoutId = setTimeout(() => controller.abort(), 9500);
 
   try {
     let rawText: string | null = null;
+    let llmSource = 'fallback';
 
-    if (geminiKey && geminiKey !== 'your_gemini_api_key_here') {
-      rawText = await callGemini(geminiKey, prompt, controller.signal);
-    } else if (xaiKey && xaiKey !== 'your_xai_api_key_here') {
+    if (hasGeminiKey && geminiKey) {
+      try {
+        rawText = await callGemini(geminiKey, prompt, controller.signal);
+        llmSource = 'gemini';
+      } catch (geminiErr: any) {
+        if (hasXaiKey && xaiKey && !controller.signal.aborted) {
+          console.warn(
+            '[AI] Direct Gemini failed; falling back to xAI:',
+            geminiErr?.message || geminiErr
+          );
+          rawText = await callXAi(xaiKey, prompt, controller.signal);
+          llmSource = 'grok';
+        } else {
+          throw geminiErr;
+        }
+      }
+    } else if (hasXaiKey && xaiKey) {
       rawText = await callXAi(xaiKey, prompt, controller.signal);
+      llmSource = 'grok';
     } else {
+      clearTimeout(timeoutId);
       console.warn('[AI] No direct GEMINI_API_KEY or XAI_API_KEY found. Activating fail-safe default.');
       return getFailSafeResult();
     }
@@ -268,6 +355,7 @@ export async function evaluateAiScam(input: AiEvaluationInput): Promise<AiEvalua
         reasons: validated.reasons,
         questionForElder: validated.question_for_elder,
         familySummary: validated.family_summary,
+        source: llmSource,
       },
       aiFailed: false,
     };

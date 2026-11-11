@@ -1,0 +1,90 @@
+:root {
+  /* Colour tokens */
+  --paper: #F7F4EE;
+  --surface: #FFFFFF;
+  --line: #E4DED3;
+  --field-border: #8C857A;
+
+  --ink: #1D1B17;
+  --ink-2: #57524A;
+  --ink-3: #6B655C;
+
+  --brand: #1F4E79;
+  --brand-hover: #173B5C;
+  --brand-tint: #E8EEF5;
+
+  --safe: #2F7A4F;
+  --safe-tint: #E6F1EA;
+
+  --hold: #8A4B08;
+  --hold-tint: #FBF0DE;
+  --hold-border: #E9CF9F;
+
+  --danger: #B42318;
+  --danger-tint: #FBEAE8;
+
+  /* Typography tokens */
+  --font-heading: 'Newsreader', Georgia, serif;
+  --font-body: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
+
+  /* Type scale */
+  --text-elder-h1: 2.25rem;
+  --text-family-h1: 2rem;
+  --text-elder-body: 1.125rem;
+  --text-elder-helper: 0.9375rem;
+  --text-family-body: 1rem;
+  --text-input: 1.25rem;
+  --text-button: 1.125rem;
+  --text-tag: 0.875rem;
+  --text-demo: 0.8125rem;
+
+  /* Spacing scale (4/8-based) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Motion */
+  --transition-ui: 150ms ease-out;
+}
+
+@theme {
+  --font-serif: 'Newsreader', Georgia, serif;
+  --font-sans: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
+
+  --radius-control: 10px;
+  --radius-card: 14px;
+  --radius-tag: 6px;
+
+  --shadow-card: 0 1px 2px rgba(29, 27, 23, 0.06);
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-field-border: var(--field-border);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-tint: var(--brand-tint);
+
+  --color-safe: var(--safe);
+  --color-safe-tint: var(--safe-tint);
+
+  --color-hold: var(--hold);
+  --color-hold-tint: var(--hold-tint);
+  --color-hold-border: var(--hold-border);
+
+  --color-danger: var(--danger);
+  --color-danger-tint: var(--danger-tint);
+}

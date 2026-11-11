@@ -28,7 +28,8 @@ export async function handlePayPalWebhook(req: Request, res: Response) {
       }
 
       case 'PAYMENT.CAPTURE.COMPLETED': {
-        const parentAuthId = resource.parent_payment;
+        const parentAuthId =
+          resource?.supplementary_data?.related_ids?.authorization_id || resource.parent_payment;
         if (parentAuthId) {
           const payment = await Payment.findOne({ paypalAuthorizationId: parentAuthId });
           if (payment && payment.status !== 'CAPTURED') {

@@ -1,75 +1,80 @@
 @import "tailwindcss";
+@import "./tokens.css";
 
-@theme {
-  --color-deep-teal: #063B3B;
-  --color-primary-teal: #009F91;
-  --color-primary-teal-hover: #00877A;
-  --color-pale-mint: #DDF7F0;
-  --color-mint-light: #F0FBF7;
-  --color-off-white: #F7FAF9;
-  --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* ── Base reset and typography ───────────────────────────────────────────── */
-
-:root {
-  --sans: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-
-  font-family: var(--sans);
-  font-size: 16px;
-  line-height: 1.5;
-  letter-spacing: -0.01em;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  color-scheme: light;
-}
-
-body {
-  margin: 0;
-  background-color: #F7FAF9;
-  color: #063B3B;
-  overflow-x: hidden;
-  font-family: var(--sans);
-}
-
-#root {
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Prevent horizontal overflow globally ────────────────────────────────── */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  min-width: 0;
-}
-
-/* ── Form number-input adjustments ──────────────────────────────────────── */
-input[type='number']::-webkit-inner-spin-button,
-input[type='number']::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-input[type='number'] {
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-
-/* ── Custom Subtle Keyframe for Scanner ──────────────────────────────────── */
-@keyframes pulseSubtle {
-  0%, 100% {
-    opacity: 0.9;
-    transform: scale(1);
+@layer base {
+  :root {
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    color-scheme: light;
   }
-  50% {
-    opacity: 1;
-    transform: scale(1.03);
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    letter-spacing: 0;
+    overflow-x: hidden;
+  }
+
+  #root {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  /* Focus ring (focus-visible only) across all interactive elements */
+  :where(button, a[href], input, textarea, select, [tabindex]):focus-visible {
+    outline: 3px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  /* Prevent number input spinners */
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type='number'] {
+    appearance: textfield;
+    -moz-appearance: textfield;
   }
 }
 
-.animate-pulse-subtle {
-  animation: pulseSubtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-transition {
+  transition-property: color, background-color, border-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-transition {
+    transition-duration: 0ms;
+  }
 }

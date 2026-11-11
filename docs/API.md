@@ -203,7 +203,7 @@ Returns hold requests linked to the family member. Triggers lazy expiry of outda
         "Threatens law enforcement or arrest",
         "Artificial urgency"
       ],
-      "familySummary": "The sender claims the elder will be arrested unless \$500 in gift cards is delivered immediately. This fits an authority imposter scam pattern.",
+      "familySummary": "The sender claims the elder will be arrested unless $500 in gift cards is delivered immediately. This fits an authority imposter scam pattern.",
       "expiresAt": "2026-11-08T22:45:00.000Z",
       "status": "HELD"
     }

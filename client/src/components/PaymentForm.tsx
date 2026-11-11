@@ -2,6 +2,7 @@ import { useState } from 'react'
 import VoiceCapture from './VoiceCapture'
 import PaymentAnalysisView from './PaymentAnalysisView'
 import PaymentResultView from './PaymentResultView'
+import { AlertCircleIcon } from './Icons'
 import { analyzePayment, type AnalysisResult } from '../services/riskEvaluator'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -147,73 +148,73 @@ export default function PaymentForm() {
 
   // ─── Screen: Payment Entry Form ───────────────────────────────────────────
   return (
-    <form onSubmit={handleSubmit} noValidate aria-label="Payment safety analysis form">
-      <div className="space-y-5">
+    <form onSubmit={handleSubmit} noValidate aria-label="Payment check form">
+      <div className="space-y-6">
         {submitError && (
           <div
             role="alert"
-            className="rounded-xl border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800 flex items-start gap-2.5 shadow-2xs"
+            className="flex items-start gap-3 rounded-control border border-danger bg-danger-tint p-4 text-ink"
           >
-            <span className="text-rose-600 font-bold shrink-0 mt-0.5 text-base" aria-hidden="true">
-              ⚠
-            </span>
+            <AlertCircleIcon className="text-danger mt-0.5" />
             <div className="flex-1">
-              <p className="font-semibold text-rose-900">Safety Check Error</p>
-              <p className="mt-0.5 text-xs text-rose-700 leading-relaxed">{submitError}</p>
+              <p className="text-[1rem] font-semibold text-danger">
+                Could not check this payment
+              </p>
+              <p className="mt-1 text-[0.9375rem] leading-[1.5] text-ink">{submitError}</p>
             </div>
           </div>
         )}
+
         {/* Recipient / Payee Name */}
         <div>
-          <label htmlFor="payee" className="block text-sm font-semibold text-[#063B3B] mb-1.5">
-            Recipient or Business Name
+          <label
+            htmlFor="payee"
+            className="mb-2 block text-[1.125rem] font-semibold leading-[1.4] text-ink"
+          >
+            Who are you paying?
           </label>
-          <div className="relative rounded-xl shadow-2xs">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-            </div>
-            <input
-              id="payee"
-              type="text"
-              value={form.payee}
-              onChange={updateField('payee')}
-              autoComplete="off"
-              placeholder="e.g. Reliance Energy, Dr. Verma, or Tech Support"
-              aria-describedby={errors.payee ? 'payee-error' : undefined}
-              aria-invalid={!!errors.payee}
-              className={`w-full rounded-xl border bg-white py-3.5 pl-10 pr-4 text-base text-slate-800 placeholder:text-slate-400 transition-all duration-200 focus:outline-none focus:ring-4 ${
-                errors.payee
-                  ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
-                  : 'border-slate-200 hover:border-slate-300 focus:border-[#009F91] focus:ring-[#009F91]/15'
-              }`}
-            />
-          </div>
+          <input
+            id="payee"
+            type="text"
+            value={form.payee}
+            onChange={updateField('payee')}
+            autoComplete="off"
+            placeholder="Duke Energy, Dr. Patel, or a person's name"
+            aria-describedby={errors.payee ? 'payee-error' : undefined}
+            aria-invalid={!!errors.payee}
+            className={`w-full min-h-[56px] rounded-control border-[1.5px] bg-surface px-4 py-3 text-[1.25rem] leading-[1.4] text-ink placeholder:text-ink-3 ui-transition focus:outline-none ${
+              errors.payee
+                ? 'border-danger focus:border-danger'
+                : 'border-field-border focus:border-brand'
+            }`}
+          />
           {errors.payee && (
-            <p id="payee-error" role="alert" className="mt-1.5 text-xs font-semibold text-rose-600 flex items-center gap-1">
-              <span>⚠</span> {errors.payee}
+            <p
+              id="payee-error"
+              role="alert"
+              className="mt-2 flex items-start gap-2 text-[0.9375rem] font-semibold leading-[1.5] text-danger"
+            >
+              <AlertCircleIcon className="mt-0.5" />
+              <span>{errors.payee}</span>
             </p>
           )}
         </div>
 
         {/* Amount (USD) */}
         <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="amount" className="block text-sm font-semibold text-[#063B3B]">
-              Payment Amount (USD)
-            </label>
-            <span className="text-[11px] font-medium text-slate-500">US Dollars ($)</span>
-          </div>
-          <div className="relative rounded-xl shadow-2xs">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#063B3B] font-bold text-lg">
+          <label
+            htmlFor="amount"
+            className="mb-2 block text-[1.125rem] font-semibold leading-[1.4] text-ink"
+          >
+            Amount
+          </label>
+          <div className="relative">
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[1.25rem] font-semibold text-ink-2 tabular-nums"
+            >
               $
-            </div>
+            </span>
             <input
               id="amount"
               type="text"
@@ -224,55 +225,61 @@ export default function PaymentForm() {
               autoComplete="off"
               aria-describedby={errors.amount ? 'amount-error' : undefined}
               aria-invalid={!!errors.amount}
-              className={`w-full rounded-xl border bg-white py-3.5 pl-9 pr-4 text-base font-medium text-slate-800 placeholder:text-slate-400 transition-all duration-200 focus:outline-none focus:ring-4 ${
+              className={`w-full min-h-[56px] rounded-control border-[1.5px] bg-surface pl-9 pr-4 py-3 text-[1.25rem] leading-[1.4] text-ink placeholder:text-ink-3 tabular-nums ui-transition focus:outline-none ${
                 errors.amount
-                  ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
-                  : 'border-slate-200 hover:border-slate-300 focus:border-[#009F91] focus:ring-[#009F91]/15'
+                  ? 'border-danger focus:border-danger'
+                  : 'border-field-border focus:border-brand'
               }`}
             />
           </div>
           {errors.amount && (
-            <p id="amount-error" role="alert" className="mt-1.5 text-xs font-semibold text-rose-600 flex items-center gap-1">
-              <span>⚠</span> {errors.amount}
+            <p
+              id="amount-error"
+              role="alert"
+              className="mt-2 flex items-start gap-2 text-[0.9375rem] font-semibold leading-[1.5] text-danger"
+            >
+              <AlertCircleIcon className="mt-0.5" />
+              <span>{errors.amount}</span>
             </p>
           )}
         </div>
 
         {/* Payment Purpose / Context with Voice Input */}
         <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="purpose" className="block text-sm font-semibold text-[#063B3B]">
-              What is this payment for?
-            </label>
-            <span className="text-[11px] font-medium text-slate-500">Helps AI detect coercive patterns</span>
-          </div>
-          <div className="flex gap-2.5 items-start">
-            <div className="relative flex-1 min-w-0 rounded-xl shadow-2xs">
-              <textarea
-                id="purpose"
-                rows={3}
-                value={form.purpose}
-                onChange={updateField('purpose')}
-                placeholder="e.g. Utility bill payment, doctor consultation, or online purchase"
-                aria-describedby={errors.purpose ? 'purpose-error' : undefined}
-                aria-invalid={!!errors.purpose}
-                className={`w-full rounded-xl border bg-white p-3.5 text-base text-slate-800 placeholder:text-slate-400 resize-none transition-all duration-200 focus:outline-none focus:ring-4 ${
-                  errors.purpose
-                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
-                    : 'border-slate-200 hover:border-slate-300 focus:border-[#009F91] focus:ring-[#009F91]/15'
-                }`}
-              />
-            </div>
-            <div className="shrink-0 pt-0.5">
-              <VoiceCapture onTranscript={handleVoiceTranscript} />
-            </div>
-          </div>
-          <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
-            <span>Tap the microphone 🎙️ to dictate your reason safely</span>
-          </div>
+          <label
+            htmlFor="purpose"
+            className="mb-1 block text-[1.125rem] font-semibold leading-[1.4] text-ink"
+          >
+            What&apos;s it for?
+          </label>
+          <p id="purpose-help" className="mb-2 text-[0.9375rem] leading-[1.5] text-ink-3">
+            A sentence is plenty. You can say it out loud if that&apos;s easier.
+          </p>
+          <textarea
+            id="purpose"
+            rows={3}
+            value={form.purpose}
+            onChange={updateField('purpose')}
+            placeholder="Electric bill for October"
+            aria-describedby={
+              errors.purpose ? 'purpose-help purpose-error' : 'purpose-help'
+            }
+            aria-invalid={!!errors.purpose}
+            className={`w-full min-h-[112px] rounded-control border-[1.5px] bg-surface p-4 text-[1.25rem] leading-[1.45] text-ink placeholder:text-ink-3 resize-y ui-transition focus:outline-none ${
+              errors.purpose
+                ? 'border-danger focus:border-danger'
+                : 'border-field-border focus:border-brand'
+            }`}
+          />
+          <VoiceCapture onTranscript={handleVoiceTranscript} />
           {errors.purpose && (
-            <p id="purpose-error" role="alert" className="mt-1.5 text-xs font-semibold text-rose-600 flex items-center gap-1">
-              <span>⚠</span> {errors.purpose}
+            <p
+              id="purpose-error"
+              role="alert"
+              className="mt-2 flex items-start gap-2 text-[0.9375rem] font-semibold leading-[1.5] text-danger"
+            >
+              <AlertCircleIcon className="mt-0.5" />
+              <span>{errors.purpose}</span>
             </p>
           )}
         </div>
@@ -281,65 +288,10 @@ export default function PaymentForm() {
         <div className="pt-2">
           <button
             type="submit"
-            className="group relative flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#009F91] to-[#00877A] hover:from-[#00877A] hover:to-[#063B3B] py-4 px-6 text-base font-bold text-white shadow-sm transition-all duration-200 hover:shadow-md active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#009F91]/30 cursor-pointer"
+            className="w-full min-h-[52px] px-6 py-3 rounded-control bg-brand hover:bg-brand-hover text-white text-[1.125rem] font-semibold ui-transition cursor-pointer"
           >
-            <svg
-              className="h-5 w-5 transition-transform duration-200 group-hover:rotate-12"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              />
-            </svg>
-            <span>Analyze Payment</span>
-            <span className="text-white/70 transition-transform duration-200 group-hover:translate-x-1">→</span>
+            Check this payment
           </button>
-        </div>
-
-        {/* Trust Indicators */}
-        <div className="mt-6 border-t border-slate-100 pt-5">
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-            <div className="flex items-center gap-2 rounded-lg bg-[#F0FBF7] p-2 text-left">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#DDF7F0] text-[#009F91]">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <div className="text-[11px] leading-tight">
-                <p className="font-bold text-[#063B3B]">Zero Pre-Capture</p>
-                <p className="text-slate-500">Funds never move pre-check</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 rounded-lg bg-[#F0FBF7] p-2 text-left">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#DDF7F0] text-[#009F91]">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <div className="text-[11px] leading-tight">
-                <p className="font-bold text-[#063B3B]">AI Heuristics</p>
-                <p className="text-slate-500">Detects scam urgency cues</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 rounded-lg bg-[#F0FBF7] p-2 text-left">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#DDF7F0] text-[#009F91]">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <div className="text-[11px] leading-tight">
-                <p className="font-bold text-[#063B3B]">Family Safety</p>
-                <p className="text-slate-500">Suspicious holds alert loved ones</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </form>
