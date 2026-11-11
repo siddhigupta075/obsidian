@@ -1,32 +1,21 @@
-# React + TypeScript + Vite
+# SecondSight — Frontend Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + Vite 8 + TypeScript + Tailwind CSS v4 frontend for SecondSight.
 
-Currently, two official plugins are available:
+For full architecture, environment setup, and PayPal Sandbox testing instructions, see the root [`README.md`](../README.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Key Views & Components
 
-## React Compiler
+- `src/pages/ElderPaymentView.tsx`: Calm payment entry form, voice note dictation (`VoiceCapture.tsx`), AI risk check feedback (`PaymentAnalysisView.tsx`), PayPal Authorize checkout (`PayPalButton.tsx`), and elder pause screen (`PausedStatusView.tsx` / `PaymentResultView.tsx`).
+- `src/pages/FamilyDashboardView.tsx`: Family reviewer dashboard showing active held payments, scam context summary, Approve/Decline decision controls, hold history, and protected savings total.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Scripts
 
-## Expanding the Oxlint configuration
+Run inside `client/`:
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm run dev       # Start Vite dev server on http://localhost:5173 (proxies /api and /health to :3000)
+npm run build     # Type-check with tsc and build production assets to dist/
+npm run lint      # Lint with oxlint
+npm run preview   # Preview production build
 ```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.

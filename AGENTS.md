@@ -32,11 +32,13 @@ Welcome to **Second Sight**. This file contains non-negotiable rules and archite
 ## 3. Project Directory Map
 
 - `client/`: React + Vite + TypeScript + Tailwind CSS frontend.
-  - `src/pages/`: `ElderPaymentView.tsx`, `PausedView.tsx`, `FamilyDashboard.tsx`, `FamilyApprove.tsx`.
-  - `src/components/`: Reusable components (e.g., `TransactionGrid.tsx`, `HoldTimeline.tsx`, `VoiceCapture.tsx`).
+  - `src/pages/`: `ElderPaymentView.tsx`, `FamilyDashboardView.tsx`.
+  - `src/components/`: `Icons.tsx`, `Navbar.tsx`, `PausedStatusView.tsx`, `PayPalButton.tsx`, `PaymentAnalysisView.tsx`, `PaymentForm.tsx`, `PaymentResultView.tsx`, `VoiceCapture.tsx`.
 - `server/`: Express + TypeScript backend.
-  - `src/routes/`: REST endpoints for check, orders, holds, payments, demo, health.
-  - `src/services/` or `src/controllers/`: `paypal.ts`, `ai.ts`, `risk.ts`, `holds.ts`.
-  - `src/models/`: Mongoose schemas for `User`, `FamilyLink`, and `Payment`.
-  - `test/`: AI benchmark dataset (`ai-eval.json`) and test runner (`run-eval.ts`).
+  - `src/routes/`: REST endpoints (`check.ts`, `orders.ts`, `holds.ts`, `payments.ts`, `demo.ts`, `webhooks.ts`, plus health route).
+  - `src/controllers/`: `ai.ts`, `holds.ts`, `paypal.ts`, `risk.ts`, `webhooks.ts`.
+  - `src/services/`: `notify.ts`.
+  - `src/models/`: Mongoose schemas for `User.ts`, `FamilyLink.ts`, and `Payment.ts`.
+  - `test/`: AI benchmark dataset (`ai-eval.json`), AI runner (`run-eval.ts`), and lifecycle test (`lifecycle-test.ts`).
+- `services/risk-engine/`: Python FastAPI microservice for Grok + rule-fallback scam scoring (`main.py`, `engine.py`, `models.py`, `prompt.py`, `tests/`).
 - `docs/`: Technical specifications, architecture designs, API contracts, evaluation rubrics.

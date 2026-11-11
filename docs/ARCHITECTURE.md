@@ -12,8 +12,8 @@ Second Sight is an intelligent payment safety layer built on top of PayPal's Ord
 +------------------------+      +-----------------------------------------+
 |   ELDER FRONTEND       |      |  FAMILY DASHBOARD                       |
 |   (React + Vite)       |      |  (React + Vite)                         |
-|   - Big Text & Voice   |      |  - AG Grid (Transaction Logs)           |
-+-----------+------------+      |  - Bryntum (Cooling-off Timeline)       |
+|   - Big Text & Voice   |      |  - Live Hold Queue (3s polling)         |
++-----------+------------+      |  - Plain-English Summaries & History    |
             |                   +-------------+---------------------------+
             +---------------------------------+
                              |
@@ -30,12 +30,11 @@ Second Sight is an intelligent payment safety layer built on top of PayPal's Ord
     | risk.ts |  |  ai.ts  |   | paypal |  | holds |  | webhooks |
     +----+----+  +----+----+   +---+----+  +---+---+  +----------+
          |            |            |           | 
-  +------+-----+      |            |           +-> [ notify.ts ] (alerts)
-  |  APIMatic  |      v            v
-  |  Dev Portal|  +----------+ +-----------+ +----------+
-  |  & SDKs    |  | LLM API  | |  PayPal   | | MongoDB  |
-  +------------+  +----------+ |  Sandbox  | |  Atlas   |
-                               +-----------+ +----------+
+         |            v            v           +-> [ notify.ts ] (alerts)
+         |     +-------------+ +-----------+ +----------+
+         +---->| Python Risk | |  PayPal   | | MongoDB  |
+               | Engine/LLMs | |  Sandbox  | |  Atlas   |
+               +-------------+ +-----------+ +----------+
 ```
 
 ---
@@ -101,10 +100,10 @@ flowchart LR
 ```
 
 1. **Rule Engine (`risk.ts`):** Fast, deterministic regex & threshold evaluation:
-   - Amount exceeds configured `FamilyLink.amountLimit` (default \$100).
-   - High-danger keywords (gift card, wire, cryptocurrency, arrest, IRS, police, lottery, remote access, keep secret).
-   - New or unknown payee label.
-2. **AI Semantic Engine (`ai.ts`):** Contextual reasoning over the message and payee context using structured JSON output validated by Zod:
+   - Amount exceeds configured `FamilyLink.amountLimit` (default $100) or high-value threshold ($500+).
+   - High-danger keywords (gift card, wire, cryptocurrency, arrest, IRS, police, lottery, remote access, keep secret, urgency/secrecy, and suspicious payee names).
+   - Note: The optional Python risk engine (`services/risk-engine/engine.py`) also evaluates `is_new_payee` when enabled.
+2. **AI Semantic Engine (`ai.ts` & `services/risk-engine/`):** Contextual reasoning over the message and payee context via the Python FastAPI Grok microservice (when configured) or direct Gemini / xAI fallback in `ai.ts`, using structured JSON output validated by Zod:
    - Detects emotional pressure, impersonation, urgency, and secrecy cues.
    - Generates a calm question for the elder.
    - Summarizes the scam context clearly for the family member.
@@ -114,8 +113,8 @@ flowchart LR
 
 ## 5. Concurrency & Safety Controls
 
-- **Atomic State Transitions:** Uses MongoDB `findOneAndUpdate({ _id: paymentId, status: "HELD" }, { status: "PROCESSING" })`. Only one worker/request can process the hold.
-- **Idempotency Headers:** Injects a unique `PayPal-Request-Id` UUID header on every `capture` and `void` API request.
+- **Atomic State Transitions:** Uses MongoDB `findOneAndUpdate` to atomically transition a hold from `HELD` to `PROCESSING` (with a 60-second `processingStartedAt` lease recovery if a worker dies mid-flight). Only one worker/request can process the hold.
+- **Idempotency Headers:** Injects a unique `PayPal-Request-Id` UUID header on PayPal `authorize`, `capture`, and `void` API requests (persisted via `paypalAuthorizationRequestId`, `paypalCaptureRequestId`, and `paypalVoidRequestId`).
 - **Server Authority:** The payment amount, currency, and recipient are loaded exclusively from the database record during order creation. The client cannot tamper with the amount post-risk-check.
 - **Lazy Expiry:** To support serverless / sleeping free-tier deployments on Render, every incoming request to `GET /api/holds` or `GET /api/payments/:id/status` identifies and voids expired holds (`expiresAt < now`). A background `setInterval` runs every 30 seconds as a secondary guard.
 
@@ -126,12 +125,15 @@ flowchart LR
 ### User
 - `name`: string
 - `role`: `"elder"` | `"family"`
+- `email`: string (optional)
+- `phone`: string (optional)
+- `createdAt`, `updatedAt`: Date
 
 ### FamilyLink
 - `elderId`: ObjectId (`User`)
 - `familyId`: ObjectId (`User`)
 - `amountLimit`: number (default: 100)
-- `createdAt`: Date
+- `createdAt`, `updatedAt`: Date
 
 ### Payment
 - `elderId`: ObjectId (`User`)
@@ -141,13 +143,18 @@ flowchart LR
 - `payeeLabel`: string (display name, e.g., "Plumber")
 - `message`: string (elder's notes / message)
 - `rulesResult`: `{ risk: string, flags: string[] }`
-- `aiResult`: `{ risk: string, scamType: string, reasons: string[], questionForElder: string, familySummary: string }`
+- `aiResult`: `{ risk?: string, scamType?: string, reasons?: string[], questionForElder?: string, familySummary?: string }`
 - `aiFailed`: boolean
 - `risk`: `"LOW"` | `"MEDIUM"` | `"HIGH"`
 - `paypalOrderId`: string
 - `paypalAuthorizationId`: string
 - `paypalCaptureId`: string
+- `paypalAuthorizationRequestId`: string (optional)
+- `paypalCaptureRequestId`: string (optional)
+- `paypalVoidRequestId`: string (optional)
 - `status`: `"CHECKED"` | `"CREATED"` | `"AUTHORIZED"` | `"HELD"` | `"PROCESSING"` | `"CAPTURED"` | `"VOIDED"` | `"FAILED"`
+- `processingAction`: string (optional)
+- `processingStartedAt`: Date (optional)
 - `holdToken`: string (crypto-random UUID; family access only)
 - `expiresAt`: Date
 - `decision`: `"APPROVED"` | `"DECLINED"` | `"EXPIRED"` | null

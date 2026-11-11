@@ -58,6 +58,7 @@ Accepts both snake_case and camelCase parameters.
   "action": "hold",
   "source": "llm",
   "risk": "HIGH",
+  "scamType": "family_emergency",
   "questionForElder": "Before this goes through, have you spoken directly to Tommy on his usual number?",
   "familySummary": "A payment of $2,500 was requested via wire for an alleged grandchild emergency...",
   "reasons": ["urgency", "secrecy", "family_emergency"],
@@ -163,7 +164,7 @@ Polled by the elder's screen every 3–5 seconds while on the paused page. Trigg
 {
   "status": "HELD",
   "decision": null,
-  "message": "Paused for a second look"
+  "message": "Paused for a second look. We asked your family to confirm."
 }
 ```
 
@@ -266,26 +267,40 @@ Used by pinging services (e.g., cron-job.org or UptimeRobot) to prevent Render f
 ## 9. Demo Identity Switcher
 
 ### `GET /api/demo/users`
-Provides mock seeded users for rapid two-window testing.
+Provides mock seeded users and the configured Sandbox PayPal Client ID for rapid two-window testing.
 
 #### Response (`200 OK`)
 ```json
 {
+  "paypalClientId": "<PAYPAL_CLIENT_ID>",
   "elder": {
     "_id": "654c1234567890abcdef1234",
     "name": "Margaret Davis",
-    "role": "elder"
+    "role": "elder",
+    "email": "margaret@example.com"
   },
   "family": {
     "_id": "654c1234567890abcdef5678",
     "name": "Sarah Davis",
-    "role": "family"
+    "role": "family",
+    "email": "sarah@example.com"
   },
   "familyLink": {
     "amountLimit": 100
   }
 }
 ```
+
+---
+
+## 10. PayPal Webhooks
+
+### `POST /api/webhooks`
+Receives asynchronous PayPal Sandbox webhook notifications (such as `PAYMENT.AUTHORIZATION.VOIDED` and `PAYMENT.CAPTURE.COMPLETED`) to synchronize local `Payment` state.
+
+#### Supported Event Types
+- `PAYMENT.AUTHORIZATION.VOIDED`
+- `PAYMENT.CAPTURE.COMPLETED`
 
 ---
 
